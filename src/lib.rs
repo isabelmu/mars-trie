@@ -3,7 +3,7 @@
 extern crate quickcheck;
 extern crate rand;
 
-//mod agent;
+mod agent;
 mod base;
 mod config;
 mod error;

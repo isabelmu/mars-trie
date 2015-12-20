@@ -25,8 +25,8 @@
 mod entry;
 mod header;
 mod history;
-mod key;
+pub mod key;
 mod range;
-mod state;
+pub mod state;
 //mod tail;
 

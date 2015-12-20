@@ -57,29 +57,22 @@ impl Union {
 }
 
 #[derive(Copy, Clone)]
-struct Key<'a> {
-    slice_: Option<&'a [u8]>,
-    union_: Union,
-    id_: u32,
-}
-
-#[derive(Copy, Clone)]
-struct ReverseKey<'a> {
+pub struct Key<'a> {
     slice_: Option<&'a [u8]>,
     union_: Union,
     id_: u32,
 }
 
 impl<'a> Key<'a> {
-    fn new() -> Key<'a> {
+    pub fn new() -> Key<'a> {
         Key { slice_: None, union_: Union::new(), id_: 0 }
     }
 
-    fn at(&self, i: usize) -> u8 {
+    pub fn at(&self, i: usize) -> u8 {
         self.slice_.unwrap()[i]
     }
 
-    fn substr(&mut self, pos: usize, length: usize) {
+    pub fn subslice(&mut self, pos: usize, length: usize) {
         if let Some(x) = self.slice_ {
             assert!(length <= x.len(), "MARISA_BOUND_ERROR");
             assert!(pos <= x.len() - length, "MARISA_BOUND_ERROR");
@@ -89,28 +82,28 @@ impl<'a> Key<'a> {
         }
     }
 
-    fn set_str(&mut self, slice: &'a[u8]) {
+    pub fn set_slice(&mut self, slice: &'a[u8]) {
         assert!(slice.len() <= std::u32::MAX as usize, "MARISA_SIZE_ERROR");
         self.slice_ = Some(slice);
     }
-    fn set_weight(&mut self, weight: f32) {
+    pub fn set_weight(&mut self, weight: f32) {
         self.union_.set_weight(weight);
     }
-    fn set_terminal(&mut self, terminal: usize) {
+    pub fn set_terminal(&mut self, terminal: usize) {
         self.union_.set_terminal(terminal);
     }
-    fn set_id(&mut self, id: usize) {
+    pub fn set_id(&mut self, id: usize) {
         assert!(id <= std::u32::MAX as usize, "MARISA_SIZE_ERROR");
         self.id_ = id as u32;
     }
 
-    fn get_weight(&self) -> f32 {
+    pub fn get_weight(&self) -> f32 {
         self.union_.get_weight()
     }
-    fn get_terminal(&self) -> usize {
+    pub fn get_terminal(&self) -> usize {
         self.union_.get_terminal()
     }
-    fn get_id(&self) -> usize {
+    pub fn get_id(&self) -> usize {
         self.id_ as usize
     }
 }
@@ -133,6 +126,13 @@ impl<'a> Ord for Key<'a> {
     fn cmp(&self, rhs: &Key) -> std::cmp::Ordering {
         self.slice_.cmp(&rhs.slice_)
     }
+}
+
+#[derive(Copy, Clone)]
+pub struct ReverseKey<'a> {
+    slice_: Option<&'a [u8]>,
+    union_: Union,
+    id_: u32,
 }
 
 /*

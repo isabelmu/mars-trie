@@ -36,7 +36,7 @@ enum StatusCode {
     EndOfPredictiveSearch,
 }
 
-struct State {
+pub struct State {
     key_buf_: Vec<u8>,
     history_: Vec<History>,
     node_id_: u32,
@@ -46,7 +46,7 @@ struct State {
 }
 
 impl State {
-    fn new() -> State {
+    pub fn new() -> State {
         State { key_buf_: Vec::new(), history_: Vec::new(), node_id_: 0,
                 query_pos_: 0, history_pos_: 0,
                 status_code_: StatusCode::ReadyToAll }
@@ -95,7 +95,7 @@ impl State {
         &mut self.history_
     }
 
-    fn reset(&mut self) {
+    pub fn reset(&mut self) {
         self.status_code_ = StatusCode::ReadyToAll;
     }
 

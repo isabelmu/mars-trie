@@ -22,85 +22,81 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+use trie::key::Key;
 use trie::state::State;
 
-enum Query {
-    StrQ(&str),
-    IdQ(usize),
-}
- 
-struct Agent {
-    key_: Key,
-    query_: Option<Query>,
-    state_: Option<State>,
+fn unwrap_ref<T>(opt: &Option<T>) -> &T {
+    opt.as_ref().unwrap()
 }
 
-impl Agent {
-    fn new() -> Agent {
-        Agent { key_(), query_: None, state_: None }
-    }
+fn unwrap_mut<T>(opt: &mut Option<T>) -> &mut T {
+    opt.as_mut().unwrap()
+}
 
-    const Query &query() const {
-      return query_;
-    }
-    const Key &key() const {
-      return key_;
-    }
-
-    const grimoire::trie::State &state() const {
-      return *state_;
-    }
-    grimoire::trie::State &state() {
-      return *state_;
-    }
+enum Query<'a> {
+    Slice(&'a [u8]),
+    ID(usize),
+}
  
-    void Agent::set_query(const char *str) {
-      MARISA_THROW_IF(str == NULL, MARISA_NULL_ERROR);
-      if (state_.get() != NULL) {
-        state_->reset();
-      }
-      query_.set_str(str);
+struct Agent<'a> {
+    key_: Key<'a>,
+    opt_query_: Option<Query<'a> >,
+    opt_state_: Option<State>,
+}
+
+impl<'a> Agent<'a> {
+    pub fn new() -> Agent<'a> {
+        Agent { key_: Key::new(), opt_query_: None, opt_state_: None }
     }
 
-    void Agent::set_query(const char *ptr, std::size_t length) {
-      MARISA_THROW_IF((ptr == NULL) && (length != 0), MARISA_NULL_ERROR);
-      if (state_.get() != NULL) {
-        state_->reset();
-      }
-      query_.set_str(ptr, length);
+    pub fn get_query(&self) -> &Query {
+        unwrap_ref(&self.opt_query_)
+    }
+    pub fn get_key(&self) -> &Key<'a> {
+        &self.key_
     }
 
-    void Agent::set_query(std::size_t key_id) {
-      if (state_.get() != NULL) {
-        state_->reset();
-      }
-      query_.set_id(key_id);
+    pub fn get_state(&self) -> &State {
+        unwrap_ref(&self.opt_state_)
+    }
+    pub fn get_state_mut(&mut self) -> &mut State {
+        unwrap_mut(&mut self.opt_state_)
     }
 
-    void set_key(const char *str) {
-      MARISA_DEBUG_IF(str == NULL, MARISA_NULL_ERROR);
-      key_.set_str(str);
+    fn reset_state(&mut self) {
+        match &mut self.opt_state_ {
+            &mut Some(ref mut x) => x.reset(),
+            &mut None => (),
+        }
     }
-    void set_key(const char *ptr, std::size_t length) {
-      MARISA_DEBUG_IF((ptr == NULL) && (length != 0), MARISA_NULL_ERROR);
-      MARISA_DEBUG_IF(length > MARISA_UINT32_MAX, MARISA_SIZE_ERROR);
-      key_.set_str(ptr, length);
+
+    pub fn set_query_by_slice(&mut self, slice: &'a [u8]) {
+        self.reset_state();
+        self.opt_query_ = Some(Query::Slice(slice));
     }
-    void set_key(std::size_t id) {
-      MARISA_DEBUG_IF(id > MARISA_UINT32_MAX, MARISA_SIZE_ERROR);
-      key_.set_id(id);
+
+    pub fn set_query_by_id(&mut self, key_id: usize) {
+        self.reset_state();
+        self.opt_query_ = Some(Query::ID(key_id));
+    }
+
+    pub fn set_key_by_slice(&mut self, slice: &'a [u8]) {
+        self.key_.set_slice(slice);
+    }
+    pub fn set_key_by_id(&mut self, id: usize) {
+        self.key_.set_id(id);
     }
   
-    fn init_state(&mut self) {
-        if self.has_state() panic!("MARISA_STATE_ERROR");
-        self.state_ = State::new();
+    pub fn init_state(&mut self) {
+        if self.has_state() { panic!("MARISA_STATE_ERROR"); }
+        self.opt_state_ = Some(State::new());
     }
 
-    fn has_state(&self) -> bool {
-        self.state_.is_some()
+    pub fn has_state(&self) -> bool {
+        self.opt_state_.is_some()
     }
  
-    fn Agent::clear(&mut self) {
+    pub fn clear(&mut self) {
         *self = Agent::new();
     }
 }
