@@ -28,6 +28,6 @@ mod header;
 mod history;
 mod louds_trie;
 mod range;
-pub mod state;
+//pub mod state;
 mod tail;
 

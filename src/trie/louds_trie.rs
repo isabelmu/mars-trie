@@ -64,7 +64,6 @@ impl LoudsTrie {
     }
 
 
-}
 
 /*
 
@@ -121,63 +120,86 @@ impl LoudsTrie {
           keyset[pairs[i].second].set_id(terminal_flags_.rank1(pairs[i].first));
         }
     }
-
-
-    fn lookup(&self, Agent &agent) -> bool
-        if !agent.has_state() {
-            panic!();
-        }
-
-        let state: &mut State = agent.state();
-        state.lookup_init();
-        while state.query_pos() < agent.query().length() {
-            if !find_child(agent) {
-                return false;
-            }
-        }
-        if !terminal_flags_[state.node_id()] {
-            return false;
-        }
-        agent.set_key(agent.query().ptr(), agent.query().length());
-        agent.set_key(terminal_flags_.rank1(state.node_id()));
-        return true;
+*/
+    pub fn id_lookup(&self, id: usize) -> Vec<u8> {
+        let mut v: Vec<u8> = Vec::new();
+        self.id_lookup_into_vec(id, &mut v);
+        v
     }
 
-    fn reverse_lookup(&self, Agent &agent) {
-        if !agent.has_state() {
-            panic!();
-        }
-        if agent.query().id() >= size() {
-            panic!();
-        }
-        State &state = agent.state();
-        state.reverse_lookup_init();
-        state.set_node_id(terminal_flags_.select1(agent.query().id()));
-        if state.node_id() == 0 {
-          agent.set_key(state.key_buf().begin(), state.key_buf().size());
-          agent.set_key(agent.query().id());
-          return;
-        }
-        while true {
-          if link_flags_[state.node_id()] {
-            const usize prev_key_pos = state.key_buf().size();
-            restore(agent, get_link(state.node_id()));
-            std::reverse(state.key_buf().begin() + prev_key_pos,
-                state.key_buf().end());
-          } else {
-            state.key_buf().push((char)bases_[state.node_id()]);
-          }
-          if state.node_id() <= self.num_l1_nodes_ {
-            std::reverse(state.key_buf().begin(), state.key_buf().end());
-            agent.set_key(state.key_buf().begin(), state.key_buf().size());
-            agent.set_key(agent.query().id());
+    pub fn id_lookup_into_vec(&self, id: usize, key_out: &mut Vec<u8>) {
+        assert!(id < self.size());
+        key_out.clear();
+
+        let mut node_id = self.terminal_flags_.select1(id);
+        if node_id == 0 {
             return;
-          }
-          state.set_node_id(
-              louds_.select1(state.node_id()) - state.node_id() - 1);
+        }
+        loop {
+            if self.link_flags_.at(node_id) {
+                let prev_key_pos = key_out.len();
+                //restore(agent, get_link(state.node_id()));
+                key_out[prev_key_pos..].reverse();
+            } else {
+                key_out.push(self.bases_[node_id]);
+            }
+            if node_id <= self.num_l1_nodes_ {
+                key_out.reverse();
+                return;
+            }
+            node_id = self.louds_.select1(node_id) - node_id - 1;
         }
     }
 
+/*
+    inline void restore(Agent &agent, usize node_id) const;
+  
+void LoudsTrie::restore(Agent &agent, usize link) const {
+  if (next_trie_.get() != NULL) {
+    next_trie_->restore_(agent,  link);
+  } else {
+    tail_.restore(agent, link);
+  }
+}
+
+    void restore_(Agent &agent, usize node_id) const;
+  
+void LoudsTrie::restore_(Agent &agent, usize node_id) const {
+  MARISA_DEBUG_IF(node_id == 0, MARISA_RANGE_ERROR);
+
+  State &state = agent.state();
+  for ( ; ; ) {
+    const usize cache_id = get_cache_id(node_id);
+    if (node_id == cache_[cache_id].child()) {
+      if (cache_[cache_id].extra() != MARISA_INVALID_EXTRA) {
+        restore(agent,  cache_[cache_id].link());
+      } else {
+        state.key_buf().push(cache_[cache_id].label());
+      }
+
+      node_id = cache_[cache_id].parent();
+      if (node_id == 0) {
+        return;
+      }
+      continue;
+    }
+
+    if (link_flags_[node_id]) {
+      restore(agent, get_link(node_id));
+    } else {
+      state.key_buf().push((char)bases_[node_id]);
+    }
+
+    if (node_id <= num_l1_nodes_) {
+      return;
+    }
+    node_id = louds_.select1(node_id) - node_id - 1;
+  }
+}
+*/
+
+
+/*
     fn num_tries(&self) -> usize {
         config_.num_tries()
     }
@@ -196,13 +218,17 @@ impl LoudsTrie {
     fn node_order() -> NodeOrder {
         config_.node_order()
     }
-    fn empty() -> bool {
-        size() == 0
-    }
-    fn size() -> usize {
-        terminal_flags_.num_1s()
-    }
+*/
 
+    pub fn is_empty(&self) -> bool {
+        self.size() == 0
+    }
+    pub fn size(&self) -> usize {
+        self.terminal_flags_.num_1s()
+    }
+}
+
+/*
     fn total_size() usize {
         louds_.total_size()
         + terminal_flags_.total_size()
@@ -523,51 +549,6 @@ bool LoudsTrie::find_child(Agent &agent) const {
     ++louds_pos;
   } while (louds_[louds_pos]);
   return false;
-}
-
-    inline void restore(Agent &agent, usize node_id) const;
-  
-void LoudsTrie::restore(Agent &agent, usize link) const {
-  if (next_trie_.get() != NULL) {
-    next_trie_->restore_(agent,  link);
-  } else {
-    tail_.restore(agent, link);
-  }
-}
-
-    void restore_(Agent &agent, usize node_id) const;
-  
-void LoudsTrie::restore_(Agent &agent, usize node_id) const {
-  MARISA_DEBUG_IF(node_id == 0, MARISA_RANGE_ERROR);
-
-  State &state = agent.state();
-  for ( ; ; ) {
-    const usize cache_id = get_cache_id(node_id);
-    if (node_id == cache_[cache_id].child()) {
-      if (cache_[cache_id].extra() != MARISA_INVALID_EXTRA) {
-        restore(agent,  cache_[cache_id].link());
-      } else {
-        state.key_buf().push(cache_[cache_id].label());
-      }
-
-      node_id = cache_[cache_id].parent();
-      if (node_id == 0) {
-        return;
-      }
-      continue;
-    }
-
-    if (link_flags_[node_id]) {
-      restore(agent, get_link(node_id));
-    } else {
-      state.key_buf().push((char)bases_[node_id]);
-    }
-
-    if (node_id <= num_l1_nodes_) {
-      return;
-    }
-    node_id = louds_.select1(node_id) - node_id - 1;
-  }
 }
 
     inline usize get_cache_id(usize node_id, char label) const;

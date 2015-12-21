@@ -264,7 +264,7 @@ impl BitVec {
     }
 
     #[cfg(target_pointer_width = "64")]
-    fn select0(&self, mut i: usize) -> usize {
+    pub fn select0(&self, mut i: usize) -> usize {
         assert!(self.is_select0_enabled(), "MARISA_STATE_ERROR");
         assert!(i < self.num_0s(), "MARISA_BOUND_ERROR");
 
@@ -329,7 +329,7 @@ impl BitVec {
     }
 
     #[cfg(target_pointer_width = "32")]
-    fn select0(&self, mut i: usize) -> usize {
+    pub fn select0(&self, mut i: usize) -> usize {
         assert!(self.is_select0_enabled(), "MARISA_STATE_ERROR");
         assert!(i < self.num_0s(), "MARISA_BOUND_ERROR");
     
@@ -422,7 +422,7 @@ impl BitVec {
     }
 
     #[cfg(target_pointer_width = "64")]
-    fn select1(&self, mut i: usize) -> usize {
+    pub fn select1(&self, mut i: usize) -> usize {
         assert!(self.is_select1_enabled(), "MARISA_STATE_ERROR");
         assert!(i < self.num_1s(), "MARISA_BOUND_ERROR");
 
@@ -486,7 +486,7 @@ impl BitVec {
     }
 
     #[cfg(target_pointer_width = "32")]
-    fn select1(&self, mut i: usize) -> usize {
+    pub fn select1(&self, mut i: usize) -> usize {
         assert!(self.is_select1_enabled(), "MARISA_STATE_ERROR");
         assert!(i < num_1s(), "MARISA_BOUND_ERROR");
     

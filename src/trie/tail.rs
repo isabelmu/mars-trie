@@ -26,7 +26,6 @@ use std;
 use config::TailMode;
 use trie::entry;
 use trie::entry::Entry;
-use trie::state::State;
 use vector::bit_vec::BitVec;
 
 pub struct Tail {
@@ -115,7 +114,7 @@ impl Tail {
         out
     }
 
-    // not sure if needed?
+/*
     fn restore(&self, state: &mut State, offset: usize) {
         assert!(!self.buf_.is_empty(), "MARISA_STATE_ERROR");
 
@@ -131,6 +130,7 @@ impl Tail {
             }
         }
     }
+*/
 
 
 

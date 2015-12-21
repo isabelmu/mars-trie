@@ -25,6 +25,10 @@
 use std;
 use super::history::History;
 
+pub struct IDQuery {
+    
+}
+
 // A search agent has its internal state and the status codes are defined
 // below.
 #[derive(Copy, Clone)]
