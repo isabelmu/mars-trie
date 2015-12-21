@@ -1,0 +1,5 @@
+
+mars-trie is a port of Susumu Yata's marisa-trie from C++ to Rust.
+
+The port is currently not in a working state, but should be up and running by the end of December 2015. I'm starting with a more-or-less direct port of the basic features. Once this is complete, I'll try to match marisa-trie's performance, and add fuzzy (Levenshtein-distance-based) string matching support. I also hope to add other dictionary implementations.
+
