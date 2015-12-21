@@ -28,5 +28,5 @@ mod history;
 pub mod key;
 mod range;
 pub mod state;
-mod tail;
+//mod tail;
 

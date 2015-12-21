@@ -172,35 +172,40 @@ void Tail::write_(Writer &writer) const {
         }
     }
 
-    fn match(agent: &mut Agent, offset: usize) -> bool {
-        assert!(!buf_.is_empty(), "MARISA_STATE_ERROR");
+    fn do_match(&mut self, agent: &mut Agent, offset: usize) -> bool {
+        assert!(!self.buf_.is_empty(), "MARISA_STATE_ERROR");
         assert!(agent.get_state().query_pos() < agent.get_query().length(),
-            MARISA_BOUND_ERROR);
-    
-        State &state = agent.get_state_mut();
-        if (end_flags_.empty()) {
-          const char * const ptr = &buf_[offset] - state.query_pos();
-          do {
-            if (ptr[state.query_pos()] != agent.query()[state.query_pos()]) {
-              return false;
+                "MARISA_BOUND_ERROR");
+
+        let state = agent.get_state_mut();
+        if self.end_flags_.is_empty() {
+            let start = offset - state.query_pos();
+            loop {
+                if self.buf_[start + state.query_pos()]
+                   != agent.get_query()[state.query_pos()] {
+                    return false;
+                }
+                state.set_query_pos(state.query_pos() + 1);
+                if self.buf_[start + state.query_pos()] == 0 {
+                    return true;
+                }
+                if state.query_pos() >= agent.get_query().len() { break; }
             }
-            state.set_query_pos(state.query_pos() + 1);
-            if (ptr[state.query_pos()] == '\0') {
-              return true;
-            }
-          } while (state.query_pos() < agent.query().length());
-          return false;
+            return false;
         } else {
-          do {
-            if (buf_[offset] != agent.query()[state.query_pos()]) {
-              return false;
+            let mut offset = offset;
+            loop {
+                if self.buf_[offset] != agent.query()[state.query_pos()] {
+                    return false;
+                }
+                state.set_query_pos(state.query_pos() + 1);
+                if self.end_flags_.at(offset + 1) {
+                    return true;
+                }
+                offset += 1;
+                if state.query_pos() >= agent.query().length() { break; }
             }
-            state.set_query_pos(state.query_pos() + 1);
-            if (end_flags_[offset++]) {
-              return true;
-            }
-          } while (state.query_pos() < agent.query().length());
-          return false;
+            return false;
         }
     }
 
