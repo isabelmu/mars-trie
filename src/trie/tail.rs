@@ -114,23 +114,21 @@ impl Tail {
         out
     }
 
-/*
-    fn restore(&self, state: &mut State, offset: usize) {
+    pub fn restore(&self, offset: usize, key_out: &mut Vec<u8>) {
         assert!(!self.buf_.is_empty(), "MARISA_STATE_ERROR");
 
         if self.end_flags_.is_empty() {
             for &c in self.buf_.iter().skip(offset) {
                 if 0 == c { break; } // null-terminated
-                state.key_buf_mut().push(c);
+                key_out.push(c);
             }
         } else {
             for (i, &c) in self.buf_.iter().skip(offset).enumerate() {
-                state.key_buf_mut().push(c);
+                key_out.push(c);
                 if self.end_flags_.at(i + offset) { break; }
             }
         }
     }
-*/
 
 
 
