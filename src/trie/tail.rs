@@ -172,42 +172,40 @@ void Tail::write_(Writer &writer) const {
         }
     }
 
+    fn match(agent: &mut Agent, offset: usize) -> bool {
+        assert!(!buf_.is_empty(), "MARISA_STATE_ERROR");
+        assert!(agent.get_state().query_pos() < agent.get_query().length(),
+            MARISA_BOUND_ERROR);
+    
+        State &state = agent.get_state_mut();
+        if (end_flags_.empty()) {
+          const char * const ptr = &buf_[offset] - state.query_pos();
+          do {
+            if (ptr[state.query_pos()] != agent.query()[state.query_pos()]) {
+              return false;
+            }
+            state.set_query_pos(state.query_pos() + 1);
+            if (ptr[state.query_pos()] == '\0') {
+              return true;
+            }
+          } while (state.query_pos() < agent.query().length());
+          return false;
+        } else {
+          do {
+            if (buf_[offset] != agent.query()[state.query_pos()]) {
+              return false;
+            }
+            state.set_query_pos(state.query_pos() + 1);
+            if (end_flags_[offset++]) {
+              return true;
+            }
+          } while (state.query_pos() < agent.query().length());
+          return false;
+        }
+    }
+
 /*
-
-    bool match(Agent &agent, usize offset) const;
     bool prefix_match(Agent &agent, usize offset) const;
-bool Tail::match(Agent &agent, usize offset) const {
-  MARISA_DEBUG_IF(buf_.empty(), MARISA_STATE_ERROR);
-  MARISA_DEBUG_IF(agent.state().query_pos() >= agent.query().length(),
-      MARISA_BOUND_ERROR);
-
-  State &state = agent.state();
-  if (end_flags_.empty()) {
-    const char * const ptr = &buf_[offset] - state.query_pos();
-    do {
-      if (ptr[state.query_pos()] != agent.query()[state.query_pos()]) {
-        return false;
-      }
-      state.set_query_pos(state.query_pos() + 1);
-      if (ptr[state.query_pos()] == '\0') {
-        return true;
-      }
-    } while (state.query_pos() < agent.query().length());
-    return false;
-  } else {
-    do {
-      if (buf_[offset] != agent.query()[state.query_pos()]) {
-        return false;
-      }
-      state.set_query_pos(state.query_pos() + 1);
-      if (end_flags_[offset++]) {
-        return true;
-      }
-    } while (state.query_pos() < agent.query().length());
-    return false;
-  }
-}
-
 bool Tail::prefix_match(Agent &agent, usize offset) const {
   MARISA_DEBUG_IF(buf_.empty(), MARISA_STATE_ERROR);
 
