@@ -48,57 +48,57 @@ impl Union {
     }
 }
 
-struct Cache {
+pub struct Cache {
     parent_: u32,
     child_: u32,
     union_: Union,
 }
 
 impl Cache {
-    fn new() -> Cache {
+    pub fn new() -> Cache {
         let mut out = Cache { parent_: 0, child_: 0, union_: Union::new() };
         out.set_weight(std::f32::MIN);
         out
     }
 
-    fn set_parent(&mut self, parent: u32) {
+    pub fn set_parent(&mut self, parent: u32) {
         self.parent_ = parent;
     }
-    fn set_child(&mut self, child: u32) {
+    pub fn set_child(&mut self, child: u32) {
         self.child_ = child;
     }
-    fn set_base(&mut self, base: u8) {
+    pub fn set_base(&mut self, base: u8) {
         let new_link = (self.union_.get_link() & !0xFFu32) | (base as u32);
         self.union_.set_link(new_link);
     }
-    fn set_extra(&mut self, extra: u32) {
+    pub fn set_extra(&mut self, extra: u32) {
         assert!(extra <= 0x00FFFFFF, "MARISA_SIZE_ERROR");
         let new_link = (self.union_.get_link() & 0xFFu32) | (extra << 8);
         self.union_.set_link(new_link);
     }
-    fn set_weight(&mut self, weight: f32) {
+    pub fn set_weight(&mut self, weight: f32) {
         self.union_.set_weight(weight);
     }
 
-    fn parent(&self) -> u32 {
+    pub fn parent(&self) -> u32 {
         self.parent_
     }
-    fn child(&self) -> u32 {
+    pub fn child(&self) -> u32 {
         self.child_
     }
-    fn base(&self) -> u8 {
+    pub fn base(&self) -> u8 {
         (self.union_.get_link() & 0xFFu32) as u8
     }
-    fn extra(&self) -> u32 {
+    pub fn extra(&self) -> u32 {
         (self.union_.get_link() & 0x00FFFFFFu32) >> 8
     }
-    fn label(&self) -> u8 {
+    pub fn label(&self) -> u8 {
         self.base()
     }
-    fn link(&self) -> u32 {
+    pub fn link(&self) -> u32 {
         self.union_.get_link()
     }
-    fn weight(&self) -> f32 {
+    pub fn weight(&self) -> f32 {
         self.union_.get_weight()
     }
 }
