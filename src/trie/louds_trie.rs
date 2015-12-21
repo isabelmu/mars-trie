@@ -25,6 +25,9 @@
 use std;
 
 use config::Config;
+use config::CacheLevel;
+use config::NodeOrder;
+use config::TailMode;
 use trie::cache::Cache;
 use trie::tail::Tail;
 use vector::bit_vec::BitVec;
@@ -70,11 +73,11 @@ impl LoudsTrie {
     }
 
     pub fn build(keys: &Vec<(&[u8], f32)>, flags: u32) -> LoudsTrie {
-        let config = Config::parse(flags);
+        let mut config = Config::parse(flags);
         let mut out = LoudsTrie::new();
 
         let mut terminals: Vec<u32> = Vec::new();
-        //build_trie(keys, &terminals, config, 1);
+        out.build_trie(keys, &mut terminals, &mut config, 1);
 
         let mut pairs: Vec<(u32, u32)> = Vec::new();
         pairs.resize(terminals.len(), (0, 0));
@@ -111,25 +114,35 @@ impl LoudsTrie {
         out
     }
 
-/*
-    void build_trie<T>(keys: &mut Vec<T>, terminals: *mut Vec<u32>,
-                       config: &Config, trie_id: usize)
+    fn build_trie(&mut self, keys: &Vec<(&[u8], f32)>, terminals: &mut Vec<u32>,
+                  config: &mut Config, trie_id: usize)
     {
-        build_current_trie(keys, terminals, config, trie_id);
+        //build_current_trie(keys, terminals, config, trie_id);
 
-        Vec<u32> next_terminals;
-        if !keys.empty() {
-            build_next_trie(keys, &next_terminals, config, trie_id);
+        let next_terminals: Vec<u32> = Vec::new();
+        if !keys.is_empty() {
+            //build_next_trie(keys, &next_terminals, config, trie_id);
         }
 
-        if next_trie_.get() != NULL {
-            config_.parse((next_trie_->num_tries() + 1) |
-                next_trie_->tail_mode() | next_trie_->node_order());
-        } else {
-            config_.parse(1 | tail_.mode() | config.node_order() |
-                config.cache_level());
+        match &self.next_trie_ {
+            &Some(ref x) => {
+                let new_cfg =
+                    (x.num_tries() + 1) as usize
+                    | x.tail_mode() as usize
+                    | x.node_order() as usize;
+                assert!(new_cfg <= std::u32::MAX as usize);
+                *config = Config::parse(new_cfg as u32);
+            },
+            &None => {
+                let new_cfg =
+                    1
+                    | self.tail_.mode() as usize // FIXME: tail_.mode??
+                    | config.node_order() as usize
+                    | config.cache_level() as usize;
+                *config = Config::parse(new_cfg as u32);
+            }
         }
-
+/*
         link_flags_.build(false, false);
         usize node_id = 0;
         for (usize i = 0; i < next_terminals.size(); ++i) {
@@ -142,8 +155,10 @@ impl LoudsTrie {
         }
         extras_.build(next_terminals);
         fill_cache();
+*/
     }
 
+/*
     fn build_current_trie<T>(keys: &mut Vec<T>,
                              terminals: *mut Vec<u32>,
                              config: &Config, trie_id: usize) {
@@ -375,26 +390,24 @@ impl LoudsTrie {
         }
     }
 
-/*
     fn num_tries(&self) -> usize {
-        config_.num_tries()
+        self.config_.num_tries()
     }
     fn num_keys(&self) -> usize {
-        size()
+        self.size()
     }
-    fn num_nodes() -> usize {
-        (louds_.size() / 2) - 1
+    fn num_nodes(&self) -> usize {
+        (self.louds_.size() / 2) - 1
     }
-    fn cache_level() -> CacheLevel {
-        config_.cache_level()
+    fn cache_level(&self) -> CacheLevel {
+        self.config_.cache_level()
     }
-    fn tail_mode() -> TailMode {
-        config_.tail_mode()
+    fn tail_mode(&self) -> TailMode {
+        self.config_.tail_mode()
     }
-    fn node_order() -> NodeOrder {
-        config_.node_order()
+    fn node_order(&self) -> NodeOrder {
+        self.config_.node_order()
     }
-*/
 
     pub fn is_empty(&self) -> bool {
         self.size() == 0
