@@ -69,219 +69,49 @@ impl LoudsTrie {
         }
     }
 
+    pub fn build(keys: &Vec<(&[u8], f32)>, flags: u32) -> LoudsTrie {
+        let config = Config::parse(flags);
+        let mut out = LoudsTrie::new();
 
+        let mut terminals: Vec<u32> = Vec::new();
+        //build_trie(keys, &terminals, config, 1);
 
-/*
-
-    fn build(keyset: &mut Keyset, flags: i32) -> LoudsTrie {
-        Config config;
-        config.parse(flags);
-    
-        let temp: LoudsTrie;
-        temp.build_(keyset, config);
-        swap(temp);
-    }
-
-    void build_(&mut self, Keyset &keyset, const Config &config) {
-        Vec<Key> keys;
-        keys.resize(keyset.size());
-        for (usize i = 0; i < keyset.size(); ++i) {
-            keys[i].set_str(keyset[i].ptr(), keyset[i].length());
-            keys[i].set_weight(keyset[i].weight());
-        }
-
-        Vec<u32> terminals;
-        build_trie(keys, &terminals, config, 1);
-
-        type TerminalIdPair = (u32, u32);
-
-        Vec<TerminalIdPair> pairs;
-        pairs.resize(terminals.size());
-        for (usize i = 0; i < pairs.size(); ++i) {
-          pairs[i].first = terminals[i];
-          pairs[i].second = (u32)i;
+        let mut pairs: Vec<(u32, u32)> = Vec::new();
+        pairs.resize(terminals.len(), (0, 0));
+        for (i, pair) in (&mut pairs).iter_mut().enumerate() {
+            pair.0 = terminals[i];
+            pair.1 = i as u32;
         }
         terminals.clear();
-        std::sort(pairs.begin(), pairs.end());
-    
-        let node_id: usize = 0;
-        for (usize i = 0; i < pairs.size(); ++i) {
-          while (node_id < pairs[i].first) {
-            terminal_flags_.push(false);
-            ++node_id;
-          }
-          if (node_id == pairs[i].first) {
-            terminal_flags_.push(true);
-            ++node_id;
-          }
-        }
-        while (node_id < bases_.size()) {
-          terminal_flags_.push(false);
-          ++node_id;
-        }
-        terminal_flags_.push(false);
-        terminal_flags_.build(false, true);
-    
-        for (usize i = 0; i < keyset.size(); ++i) {
-          keyset[pairs[i].second].set_id(terminal_flags_.rank1(pairs[i].first));
-        }
-    }
-*/
+        pairs.sort();
 
-    pub fn id_lookup(&self, id: usize) -> Vec<u8> {
-        let mut v: Vec<u8> = Vec::new();
-        self.id_lookup_into_vec(id, &mut v);
-        v
-    }
+        // FIXME: Clean up this usize/u32 situation.
 
-    pub fn id_lookup_into_vec(&self, id: usize, key_out: &mut Vec<u8>) {
-        assert!(id < self.size());
-        key_out.clear();
-
-        let mut node_id = self.terminal_flags_.select1(id);
-        if node_id == 0 {
-            return;
-        }
-        loop {
-            if self.link_flags_.at(node_id) {
-                let prev_key_pos = key_out.len();
-                self.restore(self.get_link(node_id), key_out);
-                key_out[prev_key_pos..].reverse();
-            } else {
-                key_out.push(self.bases_[node_id]);
+        let mut node_id: usize = 0;
+        for pair in &pairs {
+            while node_id < pair.0 as usize {
+                out.terminal_flags_.push(false);
+                node_id += 1;
             }
-            if node_id <= self.num_l1_nodes_ {
-                key_out.reverse();
-                return;
-            }
-            node_id = self.louds_.select1(node_id) - node_id - 1;
-        }
-    }
-
-    fn restore(&self, link: usize, key_out: &mut Vec<u8>) {
-        match &self.next_trie_ {
-            &Some(ref next) => {
-                next.restore_(link, key_out);
-            },
-            &None => {
-                self.tail_.restore(link, key_out);
+            if node_id == pair.0 as usize {
+                out.terminal_flags_.push(true);
+                node_id += 1;
             }
         }
-    }
-
-    fn restore_(&self, node_id: usize, key_out: &mut Vec<u8>) {
-        assert!(node_id != 0, "MARISA_RANGE_ERROR");
-
-        let mut node_id = node_id;
-        loop {
-            let cache_id = self.get_cache_id(node_id);
-            if node_id == self.cache_[cache_id].child() as usize {
-                if self.cache_[cache_id].extra() != INVALID_EXTRA {
-                    self.restore(self.cache_[cache_id].link() as usize,
-                                 key_out);
-                } else {
-                    key_out.push(self.cache_[cache_id].label());
-                }
-                node_id = self.cache_[cache_id].parent() as usize;
-                if node_id == 0 {
-                    return;
-                }
-            } else {
-                if self.link_flags_.at(node_id) {
-                    self.restore(self.get_link(node_id), key_out);
-                } else {
-                    key_out.push(self.bases_[node_id]);
-                }
-                if node_id <= self.num_l1_nodes_ {
-                    return;
-                }
-                node_id = self.louds_.select1(node_id) - node_id - 1;
-            }
+        while node_id < out.bases_.len() {
+            out.terminal_flags_.push(false);
+            node_id += 1;
         }
+        out.terminal_flags_.push(false);
+        out.terminal_flags_.build(false, true);
+
+        //for pair in &pairs {
+        //    keyset[pair.1].set_id(terminal_flags_.rank1(pair.0));
+        //}
+        out
     }
 
 /*
-    fn num_tries(&self) -> usize {
-        config_.num_tries()
-    }
-    fn num_keys(&self) -> usize {
-        size()
-    }
-    fn num_nodes() -> usize {
-        (louds_.size() / 2) - 1
-    }
-    fn cache_level() -> CacheLevel {
-        config_.cache_level()
-    }
-    fn tail_mode() -> TailMode {
-        config_.tail_mode()
-    }
-    fn node_order() -> NodeOrder {
-        config_.node_order()
-    }
-*/
-
-    pub fn is_empty(&self) -> bool {
-        self.size() == 0
-    }
-    pub fn size(&self) -> usize {
-        self.terminal_flags_.num_1s()
-    }
-
-    fn get_cache_id_with_label(&self, node_id: usize, label: u8) -> usize {
-        (node_id ^ (node_id << 5) ^ (label as usize)) & self.cache_mask_
-    }
-
-    fn get_cache_id(&self, node_id: usize) -> usize {
-        node_id & self.cache_mask_
-    }
-
-    // FIXME: is this correct terminology for link_id?
-    fn get_link_id(&self, node_id: usize) -> usize {
-        self.link_flags_.rank1(node_id)
-    }
-
-    fn get_link(&self, node_id: usize) -> usize {
-        self.get_link_2(node_id, self.get_link_id(node_id))
-    }
-
-    fn get_link_2(&self, node_id: usize, link_id: usize) -> usize {
-        ((self.bases_[node_id] as u32) | (self.extras_.at(link_id) * 256))
-            as usize
-    }
-}
-
-/*
-    fn total_size() usize {
-        louds_.total_size()
-        + terminal_flags_.total_size()
-        + link_flags_.total_size()
-        + bases_.total_size()
-        + extras_.total_size()
-        + tail_.total_size()
-        + if (next_trie_.get() != NULL { next_trie_->total_size() } else { 0 }
-        + cache_.total_size()
-    }
-
-    fn io_size() -> usize {
-        Header().io_size()
-        + louds_.io_size()
-        + terminal_flags_.io_size()
-        + link_flags_.io_size()
-        + bases_.io_size()
-        + extras_.io_size()
-        + tail_.io_size()
-//match
-        + if next_trie_.get() != NULL { 
-             next_trie_->io_size() - Header().io_size() } else { 0 }
-        + cache_.io_size()
-        + (sizeof(u32) * 2)
-    }
-
-    fn clear(&mut self) {
-        *self = LoudsTrie::new();
-    }
-
     void build_trie<T>(keys: &mut Vec<T>, terminals: *mut Vec<u32>,
                        config: &Config, trie_id: usize)
     {
@@ -470,6 +300,161 @@ impl LoudsTrie {
             temp[keys[i].id()] = (u32)keys[i].terminal();
         }
         terminals->swap(temp);
+    }
+*/
+
+    pub fn id_lookup(&self, id: usize) -> Vec<u8> {
+        let mut v: Vec<u8> = Vec::new();
+        self.id_lookup_into_vec(id, &mut v);
+        v
+    }
+
+    pub fn id_lookup_into_vec(&self, id: usize, key_out: &mut Vec<u8>) {
+        assert!(id < self.size());
+        key_out.clear();
+
+        let mut node_id = self.terminal_flags_.select1(id);
+        if node_id == 0 {
+            return;
+        }
+        loop {
+            if self.link_flags_.at(node_id) {
+                let prev_key_pos = key_out.len();
+                self.restore(self.get_link(node_id), key_out);
+                key_out[prev_key_pos..].reverse();
+            } else {
+                key_out.push(self.bases_[node_id]);
+            }
+            if node_id <= self.num_l1_nodes_ {
+                key_out.reverse();
+                return;
+            }
+            node_id = self.louds_.select1(node_id) - node_id - 1;
+        }
+    }
+
+    fn restore(&self, link: usize, key_out: &mut Vec<u8>) {
+        match &self.next_trie_ {
+            &Some(ref next) => {
+                next.restore_(link, key_out);
+            },
+            &None => {
+                self.tail_.restore(link, key_out);
+            }
+        }
+    }
+
+    fn restore_(&self, node_id: usize, key_out: &mut Vec<u8>) {
+        assert!(node_id != 0, "MARISA_RANGE_ERROR");
+
+        let mut node_id = node_id;
+        loop {
+            let cache_id = self.get_cache_id(node_id);
+            if node_id == self.cache_[cache_id].child() as usize {
+                if self.cache_[cache_id].extra() != INVALID_EXTRA {
+                    self.restore(self.cache_[cache_id].link() as usize,
+                                 key_out);
+                } else {
+                    key_out.push(self.cache_[cache_id].label());
+                }
+                node_id = self.cache_[cache_id].parent() as usize;
+                if node_id == 0 {
+                    return;
+                }
+            } else {
+                if self.link_flags_.at(node_id) {
+                    self.restore(self.get_link(node_id), key_out);
+                } else {
+                    key_out.push(self.bases_[node_id]);
+                }
+                if node_id <= self.num_l1_nodes_ {
+                    return;
+                }
+                node_id = self.louds_.select1(node_id) - node_id - 1;
+            }
+        }
+    }
+
+/*
+    fn num_tries(&self) -> usize {
+        config_.num_tries()
+    }
+    fn num_keys(&self) -> usize {
+        size()
+    }
+    fn num_nodes() -> usize {
+        (louds_.size() / 2) - 1
+    }
+    fn cache_level() -> CacheLevel {
+        config_.cache_level()
+    }
+    fn tail_mode() -> TailMode {
+        config_.tail_mode()
+    }
+    fn node_order() -> NodeOrder {
+        config_.node_order()
+    }
+*/
+
+    pub fn is_empty(&self) -> bool {
+        self.size() == 0
+    }
+    pub fn size(&self) -> usize {
+        self.terminal_flags_.num_1s()
+    }
+
+    fn get_cache_id_with_label(&self, node_id: usize, label: u8) -> usize {
+        (node_id ^ (node_id << 5) ^ (label as usize)) & self.cache_mask_
+    }
+
+    fn get_cache_id(&self, node_id: usize) -> usize {
+        node_id & self.cache_mask_
+    }
+
+    // FIXME: is this correct terminology for link_id?
+    fn get_link_id(&self, node_id: usize) -> usize {
+        self.link_flags_.rank1(node_id)
+    }
+
+    fn get_link(&self, node_id: usize) -> usize {
+        self.get_link_2(node_id, self.get_link_id(node_id))
+    }
+
+    fn get_link_2(&self, node_id: usize, link_id: usize) -> usize {
+        ((self.bases_[node_id] as u32) | (self.extras_.at(link_id) * 256))
+            as usize
+    }
+}
+
+/*
+    fn total_size() usize {
+        louds_.total_size()
+        + terminal_flags_.total_size()
+        + link_flags_.total_size()
+        + bases_.total_size()
+        + extras_.total_size()
+        + tail_.total_size()
+        + if (next_trie_.get() != NULL { next_trie_->total_size() } else { 0 }
+        + cache_.total_size()
+    }
+
+    fn io_size() -> usize {
+        Header().io_size()
+        + louds_.io_size()
+        + terminal_flags_.io_size()
+        + link_flags_.io_size()
+        + bases_.io_size()
+        + extras_.io_size()
+        + tail_.io_size()
+//match
+        + if next_trie_.get() != NULL { 
+             next_trie_->io_size() - Header().io_size() } else { 0 }
+        + cache_.io_size()
+        + (sizeof(u32) * 2)
+    }
+
+    fn clear(&mut self) {
+        *self = LoudsTrie::new();
     }
 
     fn reserve_cache(&mut self, config: &Config, trie_id: usize,
