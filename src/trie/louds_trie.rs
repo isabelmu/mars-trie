@@ -138,7 +138,7 @@ impl LoudsTrie {
         loop {
             if self.link_flags_.at(node_id) {
                 let prev_key_pos = key_out.len();
-                //restore(agent, get_link(state.node_id()));
+                //self.restore(agent, self.get_link(node_id));
                 key_out[prev_key_pos..].reverse();
             } else {
                 key_out.push(self.bases_[node_id]);
@@ -225,6 +225,20 @@ void LoudsTrie::restore_(Agent &agent, usize node_id) const {
     }
     pub fn size(&self) -> usize {
         self.terminal_flags_.num_1s()
+    }
+
+    // FIXME: is this correct terminology for link_id?
+    fn get_link_id(&self, node_id: usize) -> usize {
+        self.link_flags_.rank1(node_id)
+    }
+
+    fn get_link(&self, node_id: usize) -> usize {
+        self.get_link_2(node_id, self.get_link_id(node_id))
+    }
+
+    fn get_link_2(&self, node_id: usize, link_id: usize) -> usize {
+        ((self.bases_[node_id] as u32) | (self.extras_.at(link_id) * 256))
+            as usize
     }
 }
 
@@ -559,18 +573,6 @@ usize LoudsTrie::get_cache_id(usize node_id, char label) const {
     inline usize get_cache_id(usize node_id) const;
 usize LoudsTrie::get_cache_id(usize node_id) const {
   return node_id & cache_mask_;
-}
-
-    inline usize get_link(usize node_id) const;
-usize LoudsTrie::get_link(usize node_id) const {
-  return  bases_[node_id] | (extras_[link_flags_.rank1(node_id)] * 256);
-}
-
-    inline usize get_link(usize node_id,
-        usize link_id) const;
-usize LoudsTrie::get_link(usize node_id,
-    usize link_id) const {
-  return  bases_[node_id] | (extras_[link_id] * 256);
 }
 
     inline usize update_link_id(usize link_id,

@@ -105,7 +105,7 @@ impl FlatVec {
   }
 */
 
-    fn at(&self, i: usize) -> u32 {
+    pub fn at(&self, i: usize) -> u32 {
         assert!(i < self.len(), "MARISA_BOUND_ERROR");
         let pos = i * self.value_size();
         let unit_id = pos / WORD_SIZE;
