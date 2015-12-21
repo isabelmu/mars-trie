@@ -23,10 +23,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 use std;
-use agent::Agent;
 use config::TailMode;
 use trie::entry;
 use trie::entry::Entry;
+use trie::state::State;
 use vector::bit_vec::BitVec;
 
 struct Tail {
@@ -115,6 +115,24 @@ impl Tail {
         out
     }
 
+    // not sure if needed?
+    fn restore(&self, state: &mut State, offset: usize) {
+        assert!(!self.buf_.is_empty(), "MARISA_STATE_ERROR");
+
+        if self.end_flags_.is_empty() {
+            for &c in self.buf_.iter().skip(offset) {
+                if 0 == c { break; } // null-terminated
+                state.key_buf_mut().push(c);
+            }
+        } else {
+            for (i, &c) in self.buf_.iter().skip(offset).enumerate() {
+                state.key_buf_mut().push(c);
+                if self.end_flags_.at(i + offset) { break; }
+            }
+        }
+    }
+
+
 
 /*
     void map(Mapper &mapper);
@@ -155,101 +173,7 @@ void Tail::write_(Writer &writer) const {
 }
 */
 
-    fn restore(&self, agent: &mut Agent, offset: usize) {
-        assert!(!self.buf_.is_empty(), "MARISA_STATE_ERROR");
-
-        let state = agent.get_state_mut();
-        if self.end_flags_.is_empty() {
-            for &c in self.buf_.iter().skip(offset) {
-                if 0 == c { break; } // null-terminated
-                state.key_buf_mut().push(c);
-            }
-        } else {
-            for (i, &c) in self.buf_.iter().skip(offset).enumerate() {
-                state.key_buf_mut().push(c);
-                if self.end_flags_.at(i + offset) { break; }
-            }
-        }
-    }
-
-    fn do_match(&mut self, agent: &mut Agent, offset: usize) -> bool {
-        assert!(!self.buf_.is_empty(), "MARISA_STATE_ERROR");
-        assert!(agent.get_state().query_pos() < agent.get_query().length(),
-                "MARISA_BOUND_ERROR");
-
-        let state = agent.get_state_mut();
-        if self.end_flags_.is_empty() {
-            let start = offset - state.query_pos();
-            loop {
-                if self.buf_[start + state.query_pos()]
-                   != agent.get_query()[state.query_pos()] {
-                    return false;
-                }
-                state.set_query_pos(state.query_pos() + 1);
-                if self.buf_[start + state.query_pos()] == 0 {
-                    return true;
-                }
-                if state.query_pos() >= agent.get_query().len() { break; }
-            }
-            return false;
-        } else {
-            let mut offset = offset;
-            loop {
-                if self.buf_[offset] != agent.query()[state.query_pos()] {
-                    return false;
-                }
-                state.set_query_pos(state.query_pos() + 1);
-                if self.end_flags_.at(offset + 1) {
-                    return true;
-                }
-                offset += 1;
-                if state.query_pos() >= agent.query().length() { break; }
-            }
-            return false;
-        }
-    }
-
 /*
-    bool prefix_match(Agent &agent, usize offset) const;
-bool Tail::prefix_match(Agent &agent, usize offset) const {
-  MARISA_DEBUG_IF(buf_.empty(), MARISA_STATE_ERROR);
-
-  State &state = agent.state();
-  if (end_flags_.empty()) {
-    const char *ptr = &buf_[offset] - state.query_pos();
-    do {
-      if (ptr[state.query_pos()] != agent.query()[state.query_pos()]) {
-        return false;
-      }
-      state.key_buf().push(ptr[state.query_pos()]);
-      state.set_query_pos(state.query_pos() + 1);
-      if (ptr[state.query_pos()] == '\0') {
-        return true;
-      }
-    } while (state.query_pos() < agent.query().length());
-    ptr += state.query_pos();
-    do {
-      state.key_buf().push(*ptr);
-    } while (*++ptr != '\0');
-    return true;
-  } else {
-    do {
-      if (buf_[offset] != agent.query()[state.query_pos()]) {
-        return false;
-      }
-      state.key_buf().push(buf_[offset]);
-      state.set_query_pos(state.query_pos() + 1);
-      if (end_flags_[offset++]) {
-        return true;
-      }
-    } while (state.query_pos() < agent.query().length());
-    do {
-      state.key_buf().push(buf_[offset]);
-    } while (!end_flags_[offset++]);
-    return true;
-  }
-}
-
     fn clear(&mut self) {
         *self = Tail::new();
     }
