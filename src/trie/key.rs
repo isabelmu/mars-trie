@@ -137,6 +137,15 @@ impl<'a> ReverseKey<'a> {
     pub fn new(slice: &'a[u8]) -> ReverseKey<'a> {
         ReverseKey { slice_: slice, union_: Union::new(), id_: 0 }
     }
+    pub fn with_weight(&self, weight: f32) -> ReverseKey<'a> {
+        let mut out = *self;
+        out.set_weight(weight);
+        out
+    }
+
+    pub fn from_key(key: &Key<'a>) -> ReverseKey<'a> {
+        ReverseKey::new(key.get_slice()).with_weight(key.get_weight())
+    }
 
     pub fn at(&self, i: usize) -> u8 {
         self.slice_[self.slice_.len() - i - 1]

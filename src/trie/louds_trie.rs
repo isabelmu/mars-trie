@@ -31,6 +31,7 @@ use config::TailMode;
 use trie::cache::Cache;
 use trie::entry::Entry;
 use trie::key::Key;
+use trie::key::ReverseKey;
 use trie::tail::Tail;
 use vector::bit_vec::BitVec;
 use vector::flat_vec::FlatVec;
@@ -74,7 +75,7 @@ impl LoudsTrie {
         }
     }
 
-    pub fn build<'a>(keys: &Vec<Key<'a> >, flags: u32) -> LoudsTrie {
+    pub fn build<'a>(keys: &mut Vec<Key<'a> >, flags: u32) -> LoudsTrie {
         let mut config = Config::parse(flags);
         let mut out = LoudsTrie::new();
 
@@ -116,7 +117,8 @@ impl LoudsTrie {
         out
     }
 
-    fn build_trie<'a>(&mut self, keys: &Vec<Key<'a>>, terminals: &mut Vec<u32>,
+    fn build_trie<'a>(&mut self, keys: &mut Vec<Key<'a>>,
+                      terminals: &mut Vec<u32>,
                       config: &mut Config, trie_id: usize)
     {
         //build_current_trie(keys, terminals, config, trie_id);
@@ -264,7 +266,7 @@ impl LoudsTrie {
     }
 */
 
-    fn build_next_trie<'a>(&mut self, keys: &Vec<Key<'a>>,
+    fn build_next_trie<'a>(&mut self, keys: &mut Vec<Key<'a>>,
                            terminals: &mut Vec<u32>,
                            config: &Config, trie_id: usize) {
         if trie_id == config.num_tries().get() as usize {
@@ -276,20 +278,15 @@ impl LoudsTrie {
             //tail_.build(entries, terminals, config.tail_mode());
             return;
         }
-        /*
-        Vec<ReverseKey> reverse_keys;
-        reverse_keys.resize(keys.size());
-        for (usize i = 0; i < keys.size(); ++i) {
-            reverse_keys[i].set_str(keys[i].ptr(), keys[i].length());
-            reverse_keys[i].set_weight(keys[i].weight());
+        let mut reverse_keys: Vec<ReverseKey> = Vec::new();
+        reverse_keys.reserve(keys.len());
+        for key in keys.iter_mut() {
+            reverse_keys.push(ReverseKey::from_key(key));
         }
         keys.clear();
-        next_trie_.reset(new (std::nothrow) LoudsTrie);
-        if next_trie_.get() == NULL {
-            panic!();
-        }
-        next_trie_->build_trie(reverse_keys, terminals, config, trie_id + 1);
-        */
+        self.next_trie_ = Some(Box::new(LoudsTrie::new()));
+        let mut next_trie = self.next_trie_.as_mut().unwrap();
+        //next_trie.build_trie(reverse_keys, terminals, config, trie_id + 1);
     }
 
 /*
