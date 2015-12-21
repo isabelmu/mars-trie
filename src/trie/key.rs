@@ -54,33 +54,29 @@ impl Union {
 
 #[derive(Copy, Clone)]
 pub struct Key<'a> {
-    slice_: Option<&'a [u8]>,
+    slice_: &'a[u8],
     union_: Union,
     id_: u32,
 }
 
 impl<'a> Key<'a> {
-    pub fn new() -> Key<'a> {
-        Key { slice_: None, union_: Union::new(), id_: 0 }
+    pub fn new(slice: &'a[u8]) -> Key<'a> {
+        Key { slice_: slice, union_: Union::new(), id_: 0 }
     }
 
     pub fn at(&self, i: usize) -> u8 {
-        self.slice_.unwrap()[i]
+        self.slice_[i]
     }
 
     pub fn subslice(&mut self, pos: usize, length: usize) {
-        if let Some(x) = self.slice_ {
-            assert!(length <= x.len(), "MARISA_BOUND_ERROR");
-            assert!(pos <= x.len() - length, "MARISA_BOUND_ERROR");
-            self.slice_ = Some(&x[pos..pos+length]);
-        } else {
-            panic!();
-        }
+        assert!(length <= self.slice_.len(), "MARISA_BOUND_ERROR");
+        assert!(pos <= self.slice_.len() - length, "MARISA_BOUND_ERROR");
+        self.slice_ = &self.slice_[pos..pos+length];
     }
 
     pub fn set_slice(&mut self, slice: &'a[u8]) {
         assert!(slice.len() <= std::u32::MAX as usize, "MARISA_SIZE_ERROR");
-        self.slice_ = Some(slice);
+        self.slice_ = slice;
     }
     pub fn set_weight(&mut self, weight: f32) {
         self.union_.set_weight(weight);
@@ -93,6 +89,9 @@ impl<'a> Key<'a> {
         self.id_ = id as u32;
     }
 
+    pub fn get_slice(&self) -> &'a[u8] {
+        self.slice_
+    }
     pub fn get_weight(&self) -> f32 {
         self.union_.get_weight()
     }
@@ -127,7 +126,7 @@ impl<'a> Ord for Key<'a> {
 /// Just like Key, except we index and subslice from the end of the slice
 #[derive(Copy, Clone)]
 pub struct ReverseKey<'a> {
-    slice_: Option<&'a [u8]>,
+    slice_: &'a[u8],
     union_: Union,
     id_: u32,
 }
@@ -135,30 +134,25 @@ pub struct ReverseKey<'a> {
 // FIXME: Reduce amount of identical code between Key and ReverseKey. Only
 //        at() and subslice() are different at all!
 impl<'a> ReverseKey<'a> {
-    pub fn new() -> ReverseKey<'a> {
-        ReverseKey { slice_: None, union_: Union::new(), id_: 0 }
+    pub fn new(slice: &'a[u8]) -> ReverseKey<'a> {
+        ReverseKey { slice_: slice, union_: Union::new(), id_: 0 }
     }
 
     pub fn at(&self, i: usize) -> u8 {
-        let slice = self.slice_.unwrap();
-        slice[slice.len() - i - 1]
+        self.slice_[self.slice_.len() - i - 1]
     }
 
     pub fn subslice(&mut self, pos: usize, length: usize) {
-        if let Some(x) = self.slice_ {
-            assert!(length <= x.len(), "MARISA_BOUND_ERROR");
-            assert!(pos <= x.len() - length, "MARISA_BOUND_ERROR");
-            let new_end = x.len() - pos;
-            let new_begin = new_end - length;
-            self.slice_ = Some(&x[new_begin..new_end]);
-        } else {
-            panic!();
-        }
+        assert!(length <= self.slice_.len(), "MARISA_BOUND_ERROR");
+        assert!(pos <= self.slice_.len() - length, "MARISA_BOUND_ERROR");
+        let new_end = self.slice_.len() - pos;
+        let new_begin = new_end - length;
+        self.slice_ = &self.slice_[new_begin..new_end];
     }
 
     pub fn set_slice(&mut self, slice: &'a[u8]) {
         assert!(slice.len() <= std::u32::MAX as usize, "MARISA_SIZE_ERROR");
-        self.slice_ = Some(slice);
+        self.slice_ = slice;
     }
     pub fn set_weight(&mut self, weight: f32) {
         self.union_.set_weight(weight);
@@ -171,6 +165,9 @@ impl<'a> ReverseKey<'a> {
         self.id_ = id as u32;
     }
 
+    pub fn get_slice(&self) -> &'a[u8] {
+        self.slice_
+    }
     pub fn get_weight(&self) -> f32 {
         self.union_.get_weight()
     }

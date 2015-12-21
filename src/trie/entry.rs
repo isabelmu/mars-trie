@@ -26,17 +26,31 @@ use std::cmp::Ordering;
 use iter_util::common_count_eq;
 
 pub struct Entry<'a> {
-    pub slice_: &'a [u8],
-    pub id_: u32,
+    slice_: &'a [u8],
+    id_: u32,
 }
 
 impl<'a> Entry<'a> {
+    pub fn new(slice: &'a [u8], id: u32) -> Entry<'a> {
+        Entry { slice_: slice, id_: id }
+    }
     pub fn common_count<'b>(&'a self, rhs: &Entry<'b>) -> usize {
         common_count_eq(self.slice_.iter(), rhs.slice_.iter())
     }
-
     pub fn len(&self) -> usize {
         self.slice_.len()
+    }
+    pub fn get_slice(&self) -> &'a [u8] {
+        self.slice_
+    }
+    pub fn set_slice(&mut self, slice: &'a [u8]) {
+        self.slice_ = slice;
+    }
+    pub fn get_id(&self) -> u32 {
+        self.id_
+    }
+    pub fn set_id(&mut self, id: u32) {
+        self.id_ = id;
     }
 }
 

@@ -43,7 +43,7 @@ impl Tail {
         let mode = match mode {
             TailMode::Text => {
                 if entries.iter().any(
-                  |entry| entry.slice_.iter().any(|x| *x == 0)) {
+                  |entry| entry.get_slice().iter().any(|x| *x == 0)) {
                     TailMode::Binary
                 } else {
                     TailMode::Text
@@ -54,7 +54,7 @@ impl Tail {
 
         for (i, entry) in entries.iter_mut().enumerate() {
             assert!(i <= std::u32::MAX as usize);
-            entry.id_ = i as u32;
+            entry.set_id(i as u32);
         }
 
         let mut out = Tail::new();
@@ -68,7 +68,7 @@ impl Tail {
 
         let mut optLast: Option<&Entry> = None;
         for entry in entries.iter().rev() {
-            assert!(!entry.slice_.is_empty(), "MARISA_RANGE_ERROR");
+            assert!(!entry.get_slice().is_empty(), "MARISA_RANGE_ERROR");
 
             let doPush = match optLast {
                 Some(last) => {
@@ -79,8 +79,8 @@ impl Tail {
                         let diff = last.len() - entry.len();
                         assert!(diff <= std::u32::MAX as usize);
                         let diff = diff as u32;
-                        tmp[entry.id_ as usize] = tmp[last.id_ as usize]
-                                                + diff;
+                        tmp[entry.get_id() as usize] =
+                            tmp[last.get_id() as usize] + diff;
                         false
                     } else {
                         true
@@ -90,9 +90,9 @@ impl Tail {
             };
 
             if doPush {
-                tmp[entry.id_ as usize] = out.buf_.len() as u32;
+                tmp[entry.get_id() as usize] = out.buf_.len() as u32;
 
-                out.buf_.extend(entry.slice_.iter().rev());
+                out.buf_.extend(entry.get_slice().iter().rev());
 
                 match mode {
                     TailMode::Text => { out.buf_.push(0); },
