@@ -57,6 +57,28 @@ pub struct LoudsTrie {
 //    mapper_: Mapper,
 }
 
+trait BuildNextTrie {
+    fn build_next_trie(&mut self, louds_trie: &mut LoudsTrie,
+                       terminals: &mut Vec<u32>, config: &Config,
+                       trie_id: usize);
+}
+
+impl<'a> BuildNextTrie for Vec<Key<'a>> {
+    fn build_next_trie(&mut self, louds_trie: &mut LoudsTrie,
+                       terminals: &mut Vec<u32>, config: &Config,
+                       trie_id: usize) {
+        louds_trie.build_next_trie_fwd(self, terminals, config, trie_id);
+    }
+}
+
+impl<'a> BuildNextTrie for Vec<ReverseKey<'a>> {
+    fn build_next_trie(&mut self, louds_trie: &mut LoudsTrie,
+                       terminals: &mut Vec<u32>, config: &Config,
+                       trie_id: usize) {
+        louds_trie.build_next_trie_rev(self, terminals, config, trie_id);
+    }
+}
+
 impl LoudsTrie {
     // We shouldn't expose this. Clients can just use build, map, and read.
     fn new() -> LoudsTrie {
@@ -118,15 +140,16 @@ impl LoudsTrie {
         out
     }
 
-    fn build_trie<'a>(&mut self, keys: &mut Vec<Key<'a>>,
-                      terminals: &mut Vec<u32>,
-                      config: &mut Config, trie_id: usize)
+    fn build_trie<'a, T>(
+        &mut self, keys: &mut Vec<T>, terminals: &mut Vec<u32>,
+        config: &mut Config, trie_id: usize)
+        where T: IKey<'a>, Vec<T>: BuildNextTrie
     {
         //build_current_trie(keys, terminals, config, trie_id);
 
         let mut next_terminals: Vec<u32> = Vec::new();
         if !keys.is_empty() {
-            self.build_next_trie(keys, &mut next_terminals, config, trie_id);
+            keys.build_next_trie(self, &mut next_terminals, config, trie_id);
         }
 
         match &self.next_trie_ {
@@ -267,9 +290,9 @@ impl LoudsTrie {
     }
 */
 
-    fn build_next_trie<'a>(&mut self, keys: &mut Vec<Key<'a>>,
-                           terminals: &mut Vec<u32>,
-                           config: &Config, trie_id: usize) {
+    fn build_next_trie_fwd<'a>(&mut self, keys: &mut Vec<Key<'a>>,
+                               terminals: &mut Vec<u32>,
+                               config: &Config, trie_id: usize) {
         if trie_id == config.num_tries().get() as usize {
             let mut entries: Vec<Entry<'a>> = Vec::new();
             entries.reserve(keys.len());
@@ -290,26 +313,24 @@ impl LoudsTrie {
         //next_trie.build_trie(reverse_keys, terminals, config, trie_id + 1);
     }
 
-/*
-    fn build_next_trie(&mut self, keys: &mut Vec<ReverseKey>,
-                       terminals: *mut Vec<u32>,
-                       config: &Config, trie_id: usize) {
-        if trie_id == config.num_tries() {
-            Vec<Entry> entries;
-            entries.resize(keys.size());
-            for (usize i = 0; i < keys.size(); ++i) {
-                entries[i].set_str(keys[i].ptr(), keys[i].length());
+    fn build_next_trie_rev<'a>(&mut self, keys: &mut Vec<ReverseKey<'a>>,
+                               terminals: *mut Vec<u32>,
+                               config: &Config, trie_id: usize) {
+        if trie_id == config.num_tries().get() as usize {
+            let mut entries: Vec<Entry<'a>> = Vec::new();
+            entries.reserve(keys.len());
+            for key in keys {
+                entries.push(Entry::new(key.get_slice(), 0));
             }
-            tail_.build(entries, terminals, config.tail_mode());
+            //tail_.build(entries, terminals, config.tail_mode());
             return;
         }
-        next_trie_.reset(new (std::nothrow) LoudsTrie);
-        if next_trie_.get() == NULL {
-            panic!();
-        }
-        next_trie_->build_trie(keys, terminals, config, trie_id + 1);
+        self.next_trie_ = Some(Box::new(LoudsTrie::new()));
+        let mut next_trie = self.next_trie_.as_mut().unwrap();
+        //next_trie_->build_trie(keys, terminals, config, trie_id + 1);
     }
 
+/*
     fn build_terminals<T>(&self, keys: &Vec<T>,
                           terminals: *mut Vec<u32>) {
         Vec<u32> temp;
