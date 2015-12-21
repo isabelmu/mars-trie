@@ -26,7 +26,7 @@ mod cache;
 mod entry;
 mod header;
 mod history;
-//mod louds_trie;
+mod louds_trie;
 mod range;
 pub mod state;
 mod tail;

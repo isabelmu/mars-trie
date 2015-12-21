@@ -29,7 +29,7 @@ use trie::entry::Entry;
 use trie::state::State;
 use vector::bit_vec::BitVec;
 
-struct Tail {
+pub struct Tail {
     buf_: Vec<u8>,
     end_flags_: BitVec,
 }

@@ -113,7 +113,7 @@ const NODE_ORDER_MASK  : u32 = 0xF0000;
 const CONFIG_MASK      : u32 = 0xFFFFF;
 
 #[derive(Copy, Clone)]
-struct Config {
+pub struct Config {
     num_tries_: NumTries,
     cache_level_: CacheLevel,
     tail_mode_: TailMode,

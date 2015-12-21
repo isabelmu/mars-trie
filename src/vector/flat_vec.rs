@@ -27,7 +27,7 @@ use base::WORD_SIZE;
 use super::util::vec_resize;
 
 #[derive(Clone, Debug)]
-struct FlatVec {
+pub struct FlatVec {
     units_: Vec<usize>,
     value_size_: usize,
     mask_: u32,
