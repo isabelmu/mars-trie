@@ -52,6 +52,42 @@ impl Union {
     }
 }
 
+pub trait IKey<'a> {
+    // Could replace this with Index trait
+    fn at(&self, i: usize) -> u8;
+    fn subslice(&mut self, pos: usize, length: usize);
+
+    fn set_slice(&mut self, slice: &'a[u8]);
+    fn set_weight(&mut self, weight: f32);
+    fn set_terminal(&mut self, terminal: usize);
+    fn set_id(&mut self, id: usize);
+
+    fn get_slice(&self) -> &'a[u8];
+    fn get_weight(&self) -> f32;
+    fn get_terminal(&self) -> usize;
+    fn get_id(&self) -> usize;
+}
+
+impl<'a> PartialEq for IKey<'a> {
+    fn eq(&self, rhs: &Self) -> bool {
+        self.get_slice() == rhs.get_slice()
+    }
+}
+
+impl<'a> Eq for IKey<'a> {}
+
+impl<'a> PartialOrd for IKey<'a> {
+    fn partial_cmp(&self, rhs: &Self) -> Option<std::cmp::Ordering> {
+        self.get_slice().partial_cmp(rhs.get_slice())
+    }
+}
+
+impl<'a> Ord for IKey<'a> {
+    fn cmp(&self, rhs: &Self) -> std::cmp::Ordering {
+        self.get_slice().cmp(rhs.get_slice())
+    }
+}
+
 #[derive(Copy, Clone)]
 pub struct Key<'a> {
     slice_: &'a[u8],
@@ -63,63 +99,42 @@ impl<'a> Key<'a> {
     pub fn new(slice: &'a[u8]) -> Key<'a> {
         Key { slice_: slice, union_: Union::new(), id_: 0 }
     }
+}
 
-    pub fn at(&self, i: usize) -> u8 {
+impl<'a> IKey<'a> for Key<'a> {
+    fn at(&self, i: usize) -> u8 {
         self.slice_[i]
     }
-
-    pub fn subslice(&mut self, pos: usize, length: usize) {
+    fn subslice(&mut self, pos: usize, length: usize) {
         assert!(length <= self.slice_.len(), "MARISA_BOUND_ERROR");
         assert!(pos <= self.slice_.len() - length, "MARISA_BOUND_ERROR");
         self.slice_ = &self.slice_[pos..pos+length];
     }
-
-    pub fn set_slice(&mut self, slice: &'a[u8]) {
+    fn set_slice(&mut self, slice: &'a[u8]) {
         assert!(slice.len() <= std::u32::MAX as usize, "MARISA_SIZE_ERROR");
         self.slice_ = slice;
     }
-    pub fn set_weight(&mut self, weight: f32) {
+    fn set_weight(&mut self, weight: f32) {
         self.union_.set_weight(weight);
     }
-    pub fn set_terminal(&mut self, terminal: usize) {
+    fn set_terminal(&mut self, terminal: usize) {
         self.union_.set_terminal(terminal);
     }
-    pub fn set_id(&mut self, id: usize) {
+    fn set_id(&mut self, id: usize) {
         assert!(id <= std::u32::MAX as usize, "MARISA_SIZE_ERROR");
         self.id_ = id as u32;
     }
-
-    pub fn get_slice(&self) -> &'a[u8] {
+    fn get_slice(&self) -> &'a[u8] {
         self.slice_
     }
-    pub fn get_weight(&self) -> f32 {
+    fn get_weight(&self) -> f32 {
         self.union_.get_weight()
     }
-    pub fn get_terminal(&self) -> usize {
+    fn get_terminal(&self) -> usize {
         self.union_.get_terminal()
     }
-    pub fn get_id(&self) -> usize {
+    fn get_id(&self) -> usize {
         self.id_ as usize
-    }
-}
-
-impl<'a> PartialEq for Key<'a> {
-    fn eq(&self, rhs: &Key<'a>) -> bool {
-        self.slice_ == rhs.slice_
-    }
-}
-
-impl<'a> Eq for Key<'a> {}
-
-impl<'a> PartialOrd for Key<'a> {
-    fn partial_cmp(&self, rhs: &Key) -> Option<std::cmp::Ordering> {
-        self.slice_.partial_cmp(&rhs.slice_)
-    }
-}
-
-impl<'a> Ord for Key<'a> {
-    fn cmp(&self, rhs: &Key) -> std::cmp::Ordering {
-        self.slice_.cmp(&rhs.slice_)
     }
 }
 
@@ -185,26 +200,6 @@ impl<'a> ReverseKey<'a> {
     }
     pub fn get_id(&self) -> usize {
         self.id_ as usize
-    }
-}
-
-impl<'a> PartialEq for ReverseKey<'a> {
-    fn eq(&self, rhs: &ReverseKey<'a>) -> bool {
-        self.slice_ == rhs.slice_
-    }
-}
-
-impl<'a> Eq for ReverseKey<'a> {}
-
-impl<'a> PartialOrd for ReverseKey<'a> {
-    fn partial_cmp(&self, rhs: &ReverseKey) -> Option<std::cmp::Ordering> {
-        self.slice_.partial_cmp(&rhs.slice_)
-    }
-}
-
-impl<'a> Ord for ReverseKey<'a> {
-    fn cmp(&self, rhs: &ReverseKey) -> std::cmp::Ordering {
-        self.slice_.cmp(&rhs.slice_)
     }
 }
 

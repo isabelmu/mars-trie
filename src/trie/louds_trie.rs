@@ -30,6 +30,7 @@ use config::NodeOrder;
 use config::TailMode;
 use trie::cache::Cache;
 use trie::entry::Entry;
+use trie::key::IKey;
 use trie::key::Key;
 use trie::key::ReverseKey;
 use trie::tail::Tail;
