@@ -59,13 +59,13 @@ pub struct LoudsTrie {
 
 trait BuildNextTrie {
     fn build_next_trie(&mut self, louds_trie: &mut LoudsTrie,
-                       terminals: &mut Vec<u32>, config: &Config,
+                       terminals: &mut Vec<u32>, config: &mut Config,
                        trie_id: usize);
 }
 
 impl<'a> BuildNextTrie for Vec<Key<'a>> {
     fn build_next_trie(&mut self, louds_trie: &mut LoudsTrie,
-                       terminals: &mut Vec<u32>, config: &Config,
+                       terminals: &mut Vec<u32>, config: &mut Config,
                        trie_id: usize) {
         louds_trie.build_next_trie_fwd(self, terminals, config, trie_id);
     }
@@ -73,7 +73,7 @@ impl<'a> BuildNextTrie for Vec<Key<'a>> {
 
 impl<'a> BuildNextTrie for Vec<ReverseKey<'a>> {
     fn build_next_trie(&mut self, louds_trie: &mut LoudsTrie,
-                       terminals: &mut Vec<u32>, config: &Config,
+                       terminals: &mut Vec<u32>, config: &mut Config,
                        trie_id: usize) {
         louds_trie.build_next_trie_rev(self, terminals, config, trie_id);
     }
@@ -292,7 +292,7 @@ impl LoudsTrie {
 
     fn build_next_trie_fwd<'a>(&mut self, keys: &mut Vec<Key<'a>>,
                                terminals: &mut Vec<u32>,
-                               config: &Config, trie_id: usize) {
+                               config: &mut Config, trie_id: usize) {
         if trie_id == config.num_tries().get() as usize {
             let mut entries: Vec<Entry<'a>> = Vec::new();
             entries.reserve(keys.len());
@@ -310,12 +310,12 @@ impl LoudsTrie {
         keys.clear();
         self.next_trie_ = Some(Box::new(LoudsTrie::new()));
         let mut next_trie = self.next_trie_.as_mut().unwrap();
-        //next_trie.build_trie(reverse_keys, terminals, config, trie_id + 1);
+        next_trie.build_trie(&mut reverse_keys, terminals, config, trie_id + 1);
     }
 
     fn build_next_trie_rev<'a>(&mut self, keys: &mut Vec<ReverseKey<'a>>,
-                               terminals: *mut Vec<u32>,
-                               config: &Config, trie_id: usize) {
+                               terminals: &mut Vec<u32>,
+                               config: &mut Config, trie_id: usize) {
         if trie_id == config.num_tries().get() as usize {
             let mut entries: Vec<Entry<'a>> = Vec::new();
             entries.reserve(keys.len());
@@ -327,7 +327,7 @@ impl LoudsTrie {
         }
         self.next_trie_ = Some(Box::new(LoudsTrie::new()));
         let mut next_trie = self.next_trie_.as_mut().unwrap();
-        //next_trie_->build_trie(keys, terminals, config, trie_id + 1);
+        next_trie.build_trie(keys, terminals, config, trie_id + 1);
     }
 
 /*
