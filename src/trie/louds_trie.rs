@@ -119,7 +119,7 @@ impl LoudsTrie {
     {
         //build_current_trie(keys, terminals, config, trie_id);
 
-        let next_terminals: Vec<u32> = Vec::new();
+        let mut next_terminals: Vec<u32> = Vec::new();
         if !keys.is_empty() {
             //build_next_trie(keys, &next_terminals, config, trie_id);
         }
@@ -142,20 +142,18 @@ impl LoudsTrie {
                 *config = Config::parse(new_cfg as u32);
             }
         }
-/*
-        link_flags_.build(false, false);
-        usize node_id = 0;
-        for (usize i = 0; i < next_terminals.size(); ++i) {
-            while !link_flags_[node_id] {
-                ++node_id;
+        //link_flags_.build(false, false);
+        let mut node_id: usize = 0;
+        for nt in next_terminals.iter_mut() {
+            while !self.link_flags_.at(node_id) {
+                node_id += 1;
             }
-            bases_[node_id] = (u8)(next_terminals[i] % 256);
-            next_terminals[i] /= 256;
-            ++node_id;
+            self.bases_[node_id] = (*nt % 256) as u8;
+            *nt /= 256;
+            node_id += 1;
         }
-        extras_.build(next_terminals);
-        fill_cache();
-*/
+        //extras_.build(next_terminals);
+        self.fill_cache();
     }
 
 /*
@@ -316,7 +314,24 @@ impl LoudsTrie {
         }
         terminals->swap(temp);
     }
+
 */
+
+    fn fill_cache(&mut self) {
+        for item in (&mut self.cache_).iter_mut() {
+            let node_id = item.child() as usize;
+            if node_id != 0 {
+                item.set_base(self.bases_[node_id]);
+                let new_extra = if self.link_flags_.at(node_id)
+                    { self.extras_.at(self.link_flags_.rank1(node_id)) }
+                    else { INVALID_EXTRA };
+                item.set_extra(new_extra);
+            } else {
+                item.set_parent(std::u32::MAX);
+                item.set_child(std::u32::MAX);
+            }
+        }
+    }
 
     pub fn id_lookup(&self, id: usize) -> Vec<u8> {
         let mut v: Vec<u8> = Vec::new();
@@ -504,20 +519,6 @@ void LoudsTrie::cache<ReverseKey>(usize parent, usize child,
     cache_[cache_id].set_parent(parent);
     cache_[cache_id].set_child(child);
     cache_[cache_id].set_weight(weight);
-  }
-}
-
-void LoudsTrie::fill_cache() {
-  for (usize i = 0; i < cache_.size(); ++i) {
-    const usize node_id = cache_[i].child();
-    if (node_id != 0) {
-      cache_[i].set_base(bases_[node_id]);
-      cache_[i].set_extra(!link_flags_[node_id] ?
-          MARISA_INVALID_EXTRA : extras_[link_flags_.rank1(node_id)]);
-    } else {
-      cache_[i].set_parent(MARISA_UINT32_MAX);
-      cache_[i].set_child(MARISA_UINT32_MAX);
-    }
   }
 }
 
