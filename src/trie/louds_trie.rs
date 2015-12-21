@@ -142,7 +142,7 @@ impl LoudsTrie {
                 *config = Config::parse(new_cfg as u32);
             }
         }
-        //link_flags_.build(false, false);
+        self.link_flags_.build(false, false);
         let mut node_id: usize = 0;
         for nt in next_terminals.iter_mut() {
             while !self.link_flags_.at(node_id) {
@@ -152,7 +152,7 @@ impl LoudsTrie {
             *nt /= 256;
             node_id += 1;
         }
-        //extras_.build(next_terminals);
+        self.extras_.build(next_terminals.iter());
         self.fill_cache();
     }
 
