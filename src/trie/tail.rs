@@ -171,35 +171,35 @@ void Tail::write_(Writer &writer) const {
 }
 */
 
-/*
-    fn clear(&mut self) {
+    pub fn clear(&mut self) {
         *self = Tail::new();
     }
 
+/*
     const char &operator[](usize offset) const {
       MARISA_DEBUG_IF(offset >= buf_.len(), MARISA_BOUND_ERROR);
       return buf_[offset];
     }
+*/
 
-    TailMode mode() const {
-      return end_flags_.empty() ? MARISA_TEXT_TAIL : MARISA_BINARY_TAIL;
+    pub fn mode(&self) -> TailMode {
+        if self.end_flags_.is_empty() { TailMode::Text }
+        else { TailMode::Binary }
     }
 
-    bool empty() const {
-      return buf_.empty();
+    pub fn is_empty(&self) -> bool {
+        self.buf_.is_empty()
     }
-    usize len() const {
-      return buf_.len();
+    pub fn len(&self) -> usize {
+        self.buf_.len()
     }
+/*
     usize total_size() const {
       return buf_.total_size() + end_flags_.total_size();
     }
     usize io_size() const {
       return buf_.io_size() + end_flags_.io_size();
     }
-
-    void clear();
-    void swap(Tail &rhs);
 */
 }
 

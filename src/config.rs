@@ -34,11 +34,11 @@ pub struct NumTries { num_: u32 }
 pub const MIN_NUM_TRIES: u32 = 0x00001;
 pub const MAX_NUM_TRIES: u32 = 0x0007F;
 impl NumTries {
-    fn new(num: u32) -> NumTries {
+    pub fn new(num: u32) -> NumTries {
         assert!(num >= MIN_NUM_TRIES && num <= MAX_NUM_TRIES);
         NumTries { num_: num }
     }
-    fn get(&self) -> u32 {
+    pub fn get(&self) -> u32 {
         self.num_
     }
 }

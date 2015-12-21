@@ -136,7 +136,7 @@ impl LoudsTrie {
             &None => {
                 let new_cfg =
                     1
-                    | self.tail_.mode() as usize // FIXME: tail_.mode??
+                    | self.tail_.mode() as usize
                     | config.node_order() as usize
                     | config.cache_level() as usize;
                 *config = Config::parse(new_cfg as u32);
@@ -391,7 +391,7 @@ impl LoudsTrie {
     }
 
     fn num_tries(&self) -> usize {
-        self.config_.num_tries()
+        self.config_.num_tries().get() as usize
     }
     fn num_keys(&self) -> usize {
         self.size()
