@@ -299,7 +299,8 @@ impl LoudsTrie {
             for key in keys {
                 entries.push(Entry::new(key.get_slice(), 0));
             }
-            //tail_.build(entries, terminals, config.tail_mode());
+            self.tail_ = Tail::build(&mut entries, terminals,
+                                     config.tail_mode());
             return;
         }
         let mut reverse_keys: Vec<ReverseKey> = Vec::new();
@@ -322,7 +323,8 @@ impl LoudsTrie {
             for key in keys {
                 entries.push(Entry::new(key.get_slice(), 0));
             }
-            //tail_.build(entries, terminals, config.tail_mode());
+            self.tail_ = Tail::build(&mut entries, terminals,
+                                     config.tail_mode());
             return;
         }
         self.next_trie_ = Some(Box::new(LoudsTrie::new()));
