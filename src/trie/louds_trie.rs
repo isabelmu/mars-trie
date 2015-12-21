@@ -29,6 +29,7 @@ use config::CacheLevel;
 use config::NodeOrder;
 use config::TailMode;
 use trie::cache::Cache;
+use trie::key::Key;
 use trie::tail::Tail;
 use vector::bit_vec::BitVec;
 use vector::flat_vec::FlatVec;
@@ -72,7 +73,7 @@ impl LoudsTrie {
         }
     }
 
-    pub fn build(keys: &Vec<(&[u8], f32)>, flags: u32) -> LoudsTrie {
+    pub fn build(keys: &Vec<Key>, flags: u32) -> LoudsTrie {
         let mut config = Config::parse(flags);
         let mut out = LoudsTrie::new();
 
@@ -114,14 +115,14 @@ impl LoudsTrie {
         out
     }
 
-    fn build_trie(&mut self, keys: &Vec<(&[u8], f32)>, terminals: &mut Vec<u32>,
+    fn build_trie(&mut self, keys: &Vec<Key>, terminals: &mut Vec<u32>,
                   config: &mut Config, trie_id: usize)
     {
         //build_current_trie(keys, terminals, config, trie_id);
 
         let mut next_terminals: Vec<u32> = Vec::new();
         if !keys.is_empty() {
-            //build_next_trie(keys, &next_terminals, config, trie_id);
+            //self.build_next_trie(keys, &mut next_terminals, config, trie_id);
         }
 
         match &self.next_trie_ {
@@ -260,9 +261,11 @@ impl LoudsTrie {
         build_terminals(keys, terminals);
         keys.swap(next_keys);
     }
-
-    fn build_next_trie(&mut self, keys: &mut Vec<Key>,
-                       terminals: *mut Vec<u32>,
+*/
+    /*
+    fn build_next_trie(&mut self, keys: &Vec<(&[u8], f32)>,
+                       //keys: &mut Vec<Key>,
+                       terminals: &mut Vec<u32>,
                        config: &Config, trie_id: usize) {
         if trie_id == config.num_tries() {
             Vec<Entry> entries;
@@ -286,6 +289,8 @@ impl LoudsTrie {
         }
         next_trie_->build_trie(reverse_keys, terminals, config, trie_id + 1);
     }
+    */
+/*
     fn build_next_trie(&mut self, keys: &mut Vec<ReverseKey>,
                        terminals: *mut Vec<u32>,
                        config: &Config, trie_id: usize) {
