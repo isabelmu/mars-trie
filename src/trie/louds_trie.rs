@@ -28,6 +28,7 @@ use trie::tail::Tail;
 use vector::bit_vec::BitVec;
 use vector::flat_vec::FlatVec;
 
+/// Recursive LOUDS trie
 pub struct LoudsTrie {
     louds_: BitVec,
     terminal_flags_: BitVec,
@@ -35,7 +36,7 @@ pub struct LoudsTrie {
     bases_: Vec<u8>,
     extras_: FlatVec,
     tail_: Tail,
-    next_trie_: Box<LoudsTrie>,
+    next_trie_: Option<Box<LoudsTrie> >,
     cache_: Vec<Cache>,
     cache_mask_: usize,
     num_l1_nodes_: usize,
@@ -43,16 +44,29 @@ pub struct LoudsTrie {
 //    mapper_: Mapper,
 }
 
-/*
+impl LoudsTrie {
+    // We shouldn't expose this. Clients can just use build, map, and read.
+    fn new() -> LoudsTrie {
+        LoudsTrie { 
+            louds_: BitVec::new(),
+            terminal_flags_: BitVec::new(),
+            link_flags_: BitVec::new(),
+            bases_: Vec::new(),
+            extras_: FlatVec::new(),
+            tail_: Tail::new(),
+            next_trie_: None,
+            cache_: Vec::new(),
+            cache_mask_: 0,
+            num_l1_nodes_: 0,
+            config_: Config::new(),
+            // mapper: Mapper::new(),
+        }
+    }
 
-// We shouldn't actually have this. We can just use build, map, etc...
-    //fn new() -> LoudsTrie {
-    //    let x = LoudsTrie { 
-    //        cache_mask_: 0, num_l1_nodes_: 0
-    ////  louds_(), terminal_flags_(), link_flags_(), bases_(), extras_(),
-    ////  tail_(), next_trie_(), cache_(), cache_mask_(0), num_l1_nodes_(0),
-    ////  config_(), mapper_() {}
-    //}
+
+}
+
+/*
 
     fn build(keyset: &mut Keyset, flags: i32) -> LoudsTrie {
         Config config;

@@ -35,7 +35,7 @@ pub struct FlatVec {
 }
 
 impl FlatVec {
-    fn new() -> FlatVec {
+    pub fn new() -> FlatVec {
         FlatVec { units_: Vec::new(), value_size_: 0, mask_: 0, len_: 0, }
     }
 
