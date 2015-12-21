@@ -290,46 +290,46 @@ impl LoudsTrie {
     }
 */
 
+    fn build_tail<'a, T: IKey<'a>>(&mut self, keys: &Vec<T>,
+                                   terminals: &mut Vec<u32>,
+                                   config: &mut Config) {
+        let mut entries: Vec<Entry<'a>> = Vec::new();
+        entries.reserve(keys.len());
+        for key in keys {
+            entries.push(Entry::new(key.get_slice(), 0));
+        }
+        self.tail_ = Tail::build(&mut entries, terminals, config.tail_mode());
+    }
+
     fn build_next_trie_fwd<'a>(&mut self, keys: &mut Vec<Key<'a>>,
                                terminals: &mut Vec<u32>,
                                config: &mut Config, trie_id: usize) {
         if trie_id == config.num_tries().get() as usize {
-            let mut entries: Vec<Entry<'a>> = Vec::new();
-            entries.reserve(keys.len());
-            for key in keys {
-                entries.push(Entry::new(key.get_slice(), 0));
+            self.build_tail(keys, terminals, config);
+        } else {
+            let mut reverse_keys: Vec<ReverseKey> = Vec::new();
+            reverse_keys.reserve(keys.len());
+            for key in keys.iter_mut() {
+                reverse_keys.push(ReverseKey::from_key(key));
             }
-            self.tail_ = Tail::build(&mut entries, terminals,
-                                     config.tail_mode());
-            return;
+            keys.clear();
+            self.next_trie_ = Some(Box::new(LoudsTrie::new()));
+            let mut next_trie = self.next_trie_.as_mut().unwrap();
+            next_trie.build_trie(&mut reverse_keys, terminals, config,
+                                 trie_id + 1);
         }
-        let mut reverse_keys: Vec<ReverseKey> = Vec::new();
-        reverse_keys.reserve(keys.len());
-        for key in keys.iter_mut() {
-            reverse_keys.push(ReverseKey::from_key(key));
-        }
-        keys.clear();
-        self.next_trie_ = Some(Box::new(LoudsTrie::new()));
-        let mut next_trie = self.next_trie_.as_mut().unwrap();
-        next_trie.build_trie(&mut reverse_keys, terminals, config, trie_id + 1);
     }
 
     fn build_next_trie_rev<'a>(&mut self, keys: &mut Vec<ReverseKey<'a>>,
                                terminals: &mut Vec<u32>,
                                config: &mut Config, trie_id: usize) {
         if trie_id == config.num_tries().get() as usize {
-            let mut entries: Vec<Entry<'a>> = Vec::new();
-            entries.reserve(keys.len());
-            for key in keys {
-                entries.push(Entry::new(key.get_slice(), 0));
-            }
-            self.tail_ = Tail::build(&mut entries, terminals,
-                                     config.tail_mode());
-            return;
+            self.build_tail(keys, terminals, config);
+        } else {
+            self.next_trie_ = Some(Box::new(LoudsTrie::new()));
+            let mut next_trie = self.next_trie_.as_mut().unwrap();
+            next_trie.build_trie(keys, terminals, config, trie_id + 1);
         }
-        self.next_trie_ = Some(Box::new(LoudsTrie::new()));
-        let mut next_trie = self.next_trie_.as_mut().unwrap();
-        next_trie.build_trie(keys, terminals, config, trie_id + 1);
     }
 
 /*
