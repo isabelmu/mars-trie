@@ -81,17 +81,17 @@ impl State {
         self.status_code_
     }
 
-    fn key_buf(&self) -> &Vec<u8> {
+    pub fn key_buf(&self) -> &Vec<u8> {
         &self.key_buf_
     }
-    fn history(&self) -> &Vec<History> {
+    pub fn history(&self) -> &Vec<History> {
         &self.history_
     }
 
-    fn key_buf_mut(&mut self) -> &mut Vec<u8> {
+    pub fn key_buf_mut(&mut self) -> &mut Vec<u8> {
         &mut self.key_buf_
     }
-    fn history_mut(&mut self) -> &mut Vec<History> {
+    pub fn history_mut(&mut self) -> &mut Vec<History> {
         &mut self.history_
     }
 

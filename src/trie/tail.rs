@@ -23,6 +23,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 use std;
+use agent::Agent;
 use config::TailMode;
 use trie::entry;
 use trie::entry::Entry;
@@ -43,7 +44,7 @@ impl Tail {
         let mode = match mode {
             TailMode::Text => {
                 if entries.iter().any(
-                  |entry| entry.slice.iter().any(|x| *x == 0)) {
+                  |entry| entry.slice_.iter().any(|x| *x == 0)) {
                     TailMode::Binary
                 } else {
                     TailMode::Text
@@ -54,7 +55,7 @@ impl Tail {
 
         for (i, entry) in entries.iter_mut().enumerate() {
             assert!(i <= std::u32::MAX as usize);
-            entry.id = i as u32;
+            entry.id_ = i as u32;
         }
 
         let mut out = Tail::new();
@@ -68,7 +69,7 @@ impl Tail {
 
         let mut optLast: Option<&Entry> = None;
         for entry in entries.iter().rev() {
-            assert!(!entry.slice.is_empty(), "MARISA_RANGE_ERROR");
+            assert!(!entry.slice_.is_empty(), "MARISA_RANGE_ERROR");
 
             let doPush = match optLast {
                 Some(last) => {
@@ -79,7 +80,8 @@ impl Tail {
                         let diff = last.len() - entry.len();
                         assert!(diff <= std::u32::MAX as usize);
                         let diff = diff as u32;
-                        tmp[entry.id as usize] = tmp[last.id as usize] + diff;
+                        tmp[entry.id_ as usize] = tmp[last.id_ as usize]
+                                                + diff;
                         false
                     } else {
                         true
@@ -89,9 +91,9 @@ impl Tail {
             };
 
             if doPush {
-                tmp[entry.id as usize] = out.buf_.len() as u32;
+                tmp[entry.id_ as usize] = out.buf_.len() as u32;
 
-                out.buf_.extend(entry.slice.iter().rev());
+                out.buf_.extend(entry.slice_.iter().rev());
 
                 match mode {
                     TailMode::Text => { out.buf_.push(0); },
@@ -156,17 +158,16 @@ void Tail::write_(Writer &writer) const {
     fn restore(&self, agent: &mut Agent, offset: usize) {
         assert!(!self.buf_.is_empty(), "MARISA_STATE_ERROR");
 
-        let state = agent.state();
+        let state = agent.get_state_mut();
         if self.end_flags_.is_empty() {
-            for c in self.buf_.iter().skip(offset) {
+            for &c in self.buf_.iter().skip(offset) {
                 if 0 == c { break; } // null-terminated
-                state.key_buf().push(*ptr);
+                state.key_buf_mut().push(c);
             }
         } else {
-            for (c, end_flag) in self.buf_.iter().skip(offset)
-                                 .zip(end_flags_.iter().skip(offset)) {
-                state.key_buf().push(c);
-                if end_flag { break; }
+            for (i, &c) in self.buf_.iter().skip(offset).enumerate() {
+                state.key_buf_mut().push(c);
+                if self.end_flags_.at(i + offset) { break; }
             }
         }
     }

@@ -77,7 +77,7 @@ impl BitVec {
         bv
     }
 
-    pub fn empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.size_ == 0
     }
     pub fn size(&self) -> usize {

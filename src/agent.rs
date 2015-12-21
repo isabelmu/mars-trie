@@ -38,7 +38,7 @@ enum Query<'a> {
     ID(usize),
 }
  
-struct Agent<'a> {
+pub struct Agent<'a> {
     key_: Key<'a>,
     opt_query_: Option<Query<'a> >,
     opt_state_: Option<State>,
