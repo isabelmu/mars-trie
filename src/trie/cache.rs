@@ -22,84 +22,84 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef MARISA_GRIMOIRE_TRIE_CACHE_H_
-#define MARISA_GRIMOIRE_TRIE_CACHE_H_
+use std;
 
-#include <cfloat>
+#[derive(Copy, Clone)]
+struct Union {
+    /// link: u32 or weight: f32
+    bits_: u32,
+}
 
-#include "marisa/base.h"
+impl Union {
+    fn new() -> Union {
+        Union { bits_: 0 }
+    }
+    fn get_weight(&self) -> f32 {
+        unsafe { std::mem::transmute(self.bits_) }
+    }
+    fn get_link(&self) -> u32 {
+        self.bits_
+    }
+    fn set_weight(&mut self, weight: f32) {
+        self.bits_ = unsafe { std::mem::transmute(weight) };
+    }
+    fn set_link(&mut self, link: u32) {
+        self.bits_ = link
+    }
+}
 
-namespace marisa {
-namespace grimoire {
-namespace trie {
+struct Cache {
+    parent_: u32,
+    child_: u32,
+    union_: Union,
+}
 
-class Cache {
- public:
-  Cache() : parent_(0), child_(0), union_() {
-    union_.weight = FLT_MIN;
-  }
-  Cache(const Cache &cache)
-      : parent_(cache.parent_), child_(cache.child_), union_(cache.union_) {}
+impl Cache {
+    fn new() -> Cache {
+        let mut out = Cache { parent_: 0, child_: 0, union_: Union::new() };
+        out.set_weight(std::f32::MIN);
+        out
+    }
 
-  Cache &operator=(const Cache &cache) {
-    parent_ = cache.parent_;
-    child_ = cache.child_;
-    union_ = cache.union_;
-    return *this;
-  }
+    fn set_parent(&mut self, parent: u32) {
+        self.parent_ = parent;
+    }
+    fn set_child(&mut self, child: u32) {
+        self.child_ = child;
+    }
+    fn set_base(&mut self, base: u8) {
+        let new_link = (self.union_.get_link() & !0xFFu32) | (base as u32);
+        self.union_.set_link(new_link);
+    }
+    fn set_extra(&mut self, extra: u32) {
+        assert!(extra <= 0x00FFFFFF, "MARISA_SIZE_ERROR");
+        let new_link = (self.union_.get_link() & 0xFFu32) | (extra << 8);
+        self.union_.set_link(new_link);
+    }
+    fn set_weight(&mut self, weight: f32) {
+        self.union_.set_weight(weight);
+    }
 
-  void set_parent(std::size_t parent) {
-    MARISA_DEBUG_IF(parent > MARISA_UINT32_MAX, MARISA_SIZE_ERROR);
-    parent_ = (UInt32)parent;
-  }
-  void set_child(std::size_t child) {
-    MARISA_DEBUG_IF(child > MARISA_UINT32_MAX, MARISA_SIZE_ERROR);
-    child_ = (UInt32)child;
-  }
-  void set_base(UInt8 base) {
-    union_.link = (union_.link & ~0xFFU) | base;
-  }
-  void set_extra(std::size_t extra) {
-    MARISA_DEBUG_IF(extra > (MARISA_UINT32_MAX >> 8), MARISA_SIZE_ERROR);
-    union_.link = (UInt32)((union_.link & 0xFFU) | (extra << 8));
-  }
-  void set_weight(float weight) {
-    union_.weight = weight;
-  }
+    fn parent(&self) -> u32 {
+        self.parent_
+    }
+    fn child(&self) -> u32 {
+        self.child_
+    }
+    fn base(&self) -> u8 {
+        (self.union_.get_link() & 0xFFu32) as u8
+    }
+    fn extra(&self) -> u32 {
+        (self.union_.get_link() & 0x00FFFFFFu32) >> 8
+    }
+    fn label(&self) -> u8 {
+        self.base()
+    }
+    fn link(&self) -> u32 {
+        self.union_.get_link()
+    }
+    fn weight(&self) -> f32 {
+        self.union_.get_weight()
+    }
+}
 
-  std::size_t parent() const {
-    return parent_;
-  }
-  std::size_t child() const {
-    return child_;
-  }
-  UInt8 base() const {
-    return (UInt8)(union_.link & 0xFFU);
-  }
-  std::size_t extra() const {
-    return union_.link >> 8;
-  }
-  char label() const {
-    return (char)base();
-  }
-  std::size_t link() const {
-    return union_.link;
-  }
-  float weight() const {
-    return union_.weight;
-  }
-
- private:
-  UInt32 parent_;
-  UInt32 child_;
-  union Union {
-    UInt32 link;
-    float weight;
-  } union_;
-};
-
-}  // namespace trie
-}  // namespace grimoire
-}  // namespace marisa
-
-#endif  // MARISA_GRIMOIRE_TRIE_CACHE_H_
