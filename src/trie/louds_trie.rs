@@ -22,11 +22,17 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+use std;
+
 use config::Config;
 use trie::cache::Cache;
 use trie::tail::Tail;
 use vector::bit_vec::BitVec;
 use vector::flat_vec::FlatVec;
+
+use base::INVALID_LINK_ID;
+
+pub const INVALID_EXTRA: u32 = std::u32::MAX >> 8;
 
 /// Recursive LOUDS trie
 pub struct LoudsTrie {
@@ -121,6 +127,7 @@ impl LoudsTrie {
         }
     }
 */
+
     pub fn id_lookup(&self, id: usize) -> Vec<u8> {
         let mut v: Vec<u8> = Vec::new();
         self.id_lookup_into_vec(id, &mut v);
@@ -163,39 +170,34 @@ impl LoudsTrie {
     }
 
     fn restore_(&self, node_id: usize, key_out: &mut Vec<u8>) {
-  
-        /*
-        MARISA_DEBUG_IF(node_id == 0, MARISA_RANGE_ERROR);
+        assert!(node_id != 0, "MARISA_RANGE_ERROR");
 
-        State &state = agent.state();
+        let mut node_id = node_id;
         loop {
-            const usize cache_id = get_cache_id(node_id);
-            if (node_id == cache_[cache_id].child()) {
-              if (cache_[cache_id].extra() != MARISA_INVALID_EXTRA) {
-                restore(agent,  cache_[cache_id].link());
-              } else {
-                state.key_buf().push(cache_[cache_id].label());
-              }
-
-              node_id = cache_[cache_id].parent();
-              if (node_id == 0) {
-                return;
-              }
-              continue;
-            }
-
-            if (link_flags_[node_id]) {
-              restore(agent, get_link(node_id));
+            let cache_id = self.get_cache_id(node_id);
+            if node_id == self.cache_[cache_id].child() as usize {
+                if self.cache_[cache_id].extra() != INVALID_EXTRA {
+                    self.restore(self.cache_[cache_id].link() as usize,
+                                 key_out);
+                } else {
+                    key_out.push(self.cache_[cache_id].label());
+                }
+                node_id = self.cache_[cache_id].parent() as usize;
+                if node_id == 0 {
+                    return;
+                }
             } else {
-              state.key_buf().push((char)bases_[node_id]);
+                if self.link_flags_.at(node_id) {
+                    self.restore(self.get_link(node_id), key_out);
+                } else {
+                    key_out.push(self.bases_[node_id]);
+                }
+                if node_id <= self.num_l1_nodes_ {
+                    return;
+                }
+                node_id = self.louds_.select1(node_id) - node_id - 1;
             }
-
-            if (node_id <= num_l1_nodes_) {
-              return;
-            }
-            node_id = louds_.select1(node_id) - node_id - 1;
         }
-        */
     }
 
 /*
@@ -224,6 +226,14 @@ impl LoudsTrie {
     }
     pub fn size(&self) -> usize {
         self.terminal_flags_.num_1s()
+    }
+
+    fn get_cache_id_with_label(&self, node_id: usize, label: u8) -> usize {
+        (node_id ^ (node_id << 5) ^ (label as usize)) & self.cache_mask_
+    }
+
+    fn get_cache_id(&self, node_id: usize) -> usize {
+        node_id & self.cache_mask_
     }
 
     // FIXME: is this correct terminology for link_id?
@@ -562,16 +572,6 @@ bool LoudsTrie::find_child(Agent &agent) const {
     ++louds_pos;
   } while (louds_[louds_pos]);
   return false;
-}
-
-    inline usize get_cache_id(usize node_id, char label) const;
-usize LoudsTrie::get_cache_id(usize node_id, char label) const {
-  return (node_id ^ (node_id << 5) ^ (u8)label) & cache_mask_;
-}
-
-    inline usize get_cache_id(usize node_id) const;
-usize LoudsTrie::get_cache_id(usize node_id) const {
-  return node_id & cache_mask_;
 }
 
     inline usize update_link_id(usize link_id,

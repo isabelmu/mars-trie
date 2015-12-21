@@ -32,5 +32,4 @@ pub const WORD_SIZE: usize = 64;
 
 pub const INVALID_LINK_ID: u32 = std::u32::MAX;
 pub const INVALID_KEY_ID: u32 = std::u32::MAX;
-pub const INVALID_EXTRA: u32 = std::u32::MAX >> 8;
 
