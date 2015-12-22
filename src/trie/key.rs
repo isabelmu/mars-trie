@@ -69,26 +69,6 @@ pub trait IKey<'a> {
     fn get_id(&self) -> usize;
 }
 
-impl<'a> PartialEq for IKey<'a> {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.get_slice() == rhs.get_slice()
-    }
-}
-
-impl<'a> Eq for IKey<'a> {}
-
-impl<'a> PartialOrd for IKey<'a> {
-    fn partial_cmp(&self, rhs: &Self) -> Option<std::cmp::Ordering> {
-        self.get_slice().partial_cmp(rhs.get_slice())
-    }
-}
-
-impl<'a> Ord for IKey<'a> {
-    fn cmp(&self, rhs: &Self) -> std::cmp::Ordering {
-        self.get_slice().cmp(rhs.get_slice())
-    }
-}
-
 #[derive(Copy, Clone)]
 pub struct Key<'a> {
     slice_: &'a[u8],
@@ -144,6 +124,26 @@ impl<'a> IKey<'a> for Key<'a> {
     }
     fn get_id(&self) -> usize {
         self.id_ as usize
+    }
+}
+
+impl<'a> PartialEq for Key<'a> {
+    fn eq(&self, rhs: &Self) -> bool {
+        self.get_slice() == rhs.get_slice()
+    }
+}
+
+impl<'a> Eq for Key<'a> {}
+
+impl<'a> PartialOrd for Key<'a> {
+    fn partial_cmp(&self, rhs: &Self) -> Option<std::cmp::Ordering> {
+        self.get_slice().partial_cmp(rhs.get_slice())
+    }
+}
+
+impl<'a> Ord for Key<'a> {
+    fn cmp(&self, rhs: &Self) -> std::cmp::Ordering {
+        self.get_slice().cmp(rhs.get_slice())
     }
 }
 
@@ -208,6 +208,26 @@ impl<'a> IKey<'a> for ReverseKey<'a> {
     }
     fn get_id(&self) -> usize {
         self.id_ as usize
+    }
+}
+
+impl<'a> PartialEq for ReverseKey<'a> {
+    fn eq(&self, rhs: &Self) -> bool {
+        self.get_slice() == rhs.get_slice()
+    }
+}
+
+impl<'a> Eq for ReverseKey<'a> {}
+
+impl<'a> PartialOrd for ReverseKey<'a> {
+    fn partial_cmp(&self, rhs: &Self) -> Option<std::cmp::Ordering> {
+        self.get_slice().partial_cmp(rhs.get_slice())
+    }
+}
+
+impl<'a> Ord for ReverseKey<'a> {
+    fn cmp(&self, rhs: &Self) -> std::cmp::Ordering {
+        self.get_slice().cmp(rhs.get_slice())
     }
 }
 

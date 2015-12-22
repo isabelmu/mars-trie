@@ -143,9 +143,9 @@ impl LoudsTrie {
     fn build_trie<'a, T>(
         &mut self, keys: &mut Vec<T>, terminals: &mut Vec<u32>,
         config: &mut Config, trie_id: usize)
-        where T: IKey<'a>, Vec<T>: BuildNextTrie
+        where T: IKey<'a> + Ord, Vec<T>: BuildNextTrie
     {
-        //build_current_trie(keys, terminals, config, trie_id);
+        self.build_current_trie(keys, terminals, config, trie_id);
 
         let mut next_terminals: Vec<u32> = Vec::new();
         if !keys.is_empty() {
@@ -184,14 +184,17 @@ impl LoudsTrie {
         self.fill_cache();
     }
 
-/*
-    fn build_current_trie<T>(keys: &mut Vec<T>,
-                             terminals: *mut Vec<u32>,
-                             config: &Config, trie_id: usize) {
-        for (usize i = 0; i < keys.size(); ++i) {
-          keys[i].set_id(i);
+    fn build_current_trie<'a, T: Ord + IKey<'a>>(
+        &mut self, keys: &mut Vec<T>, terminals: *mut Vec<u32>, config: &Config,
+        trie_id: usize)
+    {
+        for (i, key) in keys.iter_mut().enumerate() {
+            key.set_id(i);
         }
-        const usize num_keys = Algorithm().sort(keys.begin(), keys.end());
+        // FIXME: sort fn
+        keys.sort();
+        let num_keys = keys.len();
+/*
         reserve_cache(config, trie_id, num_keys);
 
         louds_.push(true);
@@ -287,12 +290,12 @@ impl LoudsTrie {
 
         build_terminals(keys, terminals);
         keys.swap(next_keys);
-    }
 */
+    }
 
-    fn build_tail<'a, T: IKey<'a>>(&mut self, keys: &Vec<T>,
-                                   terminals: &mut Vec<u32>,
-                                   config: &mut Config) {
+    fn build_tail<'a, T: Ord + IKey<'a>>(&mut self, keys: &Vec<T>,
+                                         terminals: &mut Vec<u32>,
+                                         config: &mut Config) {
         let mut entries: Vec<Entry<'a>> = Vec::new();
         entries.reserve(keys.len());
         for key in keys {
