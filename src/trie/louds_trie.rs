@@ -194,9 +194,9 @@ impl LoudsTrie {
         // FIXME: sort fn
         keys.sort();
         let num_keys = keys.len();
-/*
-        reserve_cache(config, trie_id, num_keys);
 
+        self.reserve_cache(config, trie_id, num_keys);
+/*
         louds_.push(true);
         louds_.push(false);
         bases_.push('\0');
@@ -291,6 +291,16 @@ impl LoudsTrie {
         build_terminals(keys, terminals);
         keys.swap(next_keys);
 */
+    }
+
+    fn reserve_cache(&mut self, config: &Config, trie_id: usize,
+                     num_keys: usize) {
+        let mut cache_size: usize = if trie_id == 1 { 256 } else { 1 };
+        while cache_size < (num_keys / config.cache_level() as usize) {
+            cache_size *= 2;
+        }
+        self.cache_.resize(cache_size, Cache::new());
+        self.cache_mask_ = cache_size - 1;
     }
 
     fn build_tail<'a, T: Ord + IKey<'a>>(&mut self, keys: &Vec<T>,
@@ -514,16 +524,6 @@ impl LoudsTrie {
 
     fn clear(&mut self) {
         *self = LoudsTrie::new();
-    }
-
-    fn reserve_cache(&mut self, config: &Config, trie_id: usize,
-                     num_keys: usize) {
-        let cache_size: usize = if trie_id == 1 { 256 } else { 1 };
-        while cache_size < (num_keys / config.cache_level()) {
-          cache_size *= 2;
-        }
-        cache_.resize(cache_size);
-        cache_mask_ = cache_size - 1;
     }
 
 // FIXME: Use trait for this overloading business

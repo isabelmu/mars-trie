@@ -48,6 +48,7 @@ impl Union {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct Cache {
     parent_: u32,
     child_: u32,
