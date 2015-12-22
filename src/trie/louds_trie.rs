@@ -204,12 +204,12 @@ impl LoudsTrie {
         self.bases_.push(0);
         self.link_flags_.push(false);
 
-        let next_keys: Vec<T> = Vec::new();
-        let queue: VecDeque<Range> = VecDeque::new();
-        let w_ranges: Vec<WeightedRange> = Vec::new();
+        let mut next_keys: Vec<T> = Vec::new();
+        let mut queue: VecDeque<Range> = VecDeque::new();
+        let mut w_ranges: Vec<WeightedRange> = Vec::new();
 
+        queue.push_back(Range::new(0, keys.len(), 0));
 /*
-        queue.push(make_range(0, keys.size(), 0));
         while (!queue.empty()) {
           const usize node_id = link_flags_.size() - queue.size();
 

@@ -32,7 +32,7 @@ pub struct Range {
 }
 
 impl Range {
-    fn new(begin: usize, end: usize, key_pos: usize) -> Range {
+    pub fn new(begin: usize, end: usize, key_pos: usize) -> Range {
         Range {
             begin_: begin as u32,
             end_: end as u32,
