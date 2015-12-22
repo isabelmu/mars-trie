@@ -60,13 +60,13 @@ pub struct LoudsTrie {
 //    mapper_: Mapper,
 }
 
-trait BuildNextTrie {
+trait CallBuildNextTrie {
     fn build_next_trie(&mut self, louds_trie: &mut LoudsTrie,
                        terminals: &mut Vec<u32>, config: &mut Config,
                        trie_id: usize);
 }
 
-impl<'a> BuildNextTrie for Vec<Key<'a>> {
+impl<'a> CallBuildNextTrie for Vec<Key<'a>> {
     fn build_next_trie(&mut self, louds_trie: &mut LoudsTrie,
                        terminals: &mut Vec<u32>, config: &mut Config,
                        trie_id: usize) {
@@ -74,11 +74,30 @@ impl<'a> BuildNextTrie for Vec<Key<'a>> {
     }
 }
 
-impl<'a> BuildNextTrie for Vec<ReverseKey<'a>> {
+impl<'a> CallBuildNextTrie for Vec<ReverseKey<'a>> {
     fn build_next_trie(&mut self, louds_trie: &mut LoudsTrie,
                        terminals: &mut Vec<u32>, config: &mut Config,
                        trie_id: usize) {
         louds_trie.build_next_trie_rev(self, terminals, config, trie_id);
+    }
+}
+
+trait CallCache {
+    fn cache(&self, louds_trie: &mut LoudsTrie, parent: usize, child: usize,
+             weight: f32, label: u8);
+}
+
+impl<'a> CallCache for Vec<Key<'a>> {
+    fn cache(&self, louds_trie: &mut LoudsTrie, parent: usize, child: usize,
+             weight: f32, label: u8) {
+        louds_trie.cache_fwd(parent, child, weight, label);
+    }
+}
+
+impl<'a> CallCache for Vec<ReverseKey<'a>> {
+    fn cache(&self, louds_trie: &mut LoudsTrie, parent: usize, child: usize,
+             weight: f32, _: u8) {
+        louds_trie.cache_rev(parent, child, weight);
     }
 }
 
@@ -146,7 +165,7 @@ impl LoudsTrie {
     fn build_trie<'a, T>(
         &mut self, keys: &mut Vec<T>, terminals: &mut Vec<u32>,
         config: &mut Config, trie_id: usize)
-        where T: IKey<'a> + Ord, Vec<T>: BuildNextTrie
+        where T: IKey<'a> + Ord, Vec<T>: CallCache + CallBuildNextTrie
     {
         self.build_current_trie(keys, terminals, config, trie_id);
 
@@ -187,9 +206,10 @@ impl LoudsTrie {
         self.fill_cache();
     }
 
-    fn build_current_trie<'a, T: Ord + IKey<'a>>(
+    fn build_current_trie<'a, T>(
         &mut self, keys: &mut Vec<T>, terminals: *mut Vec<u32>, config: &Config,
         trie_id: usize)
+        where T: IKey<'a> + Ord, Vec<T>: CallCache
     {
         for (i, key) in keys.iter_mut().enumerate() {
             key.set_id(i);
@@ -262,8 +282,9 @@ impl LoudsTrie {
                     }
                     key_pos += 1;
                 }
-                //cache<T>(node_id, bases_.size(), w_range.weight(),
-                //    keys[w_range.begin()][w_range.key_pos()]);
+                let bases_len = self.bases_.len();
+                keys.cache(self, node_id, bases_len, w_range.weight(),
+                           keys[w_range.begin()].at(w_range.key_pos()));
 
                 if key_pos == w_range.key_pos() + 1 {
                     self.bases_.push(keys[w_range.begin()].at(w_range.key_pos()));
@@ -293,6 +314,31 @@ impl LoudsTrie {
         std::mem::swap(keys, &mut next_keys);
     }
 
+    fn cache_fwd(&mut self, parent: usize, child: usize, weight: f32, label: u8)
+    {
+        assert!(parent < child, "MARISA_RANGE_ERROR");
+        let cache_id = self.get_cache_id_with_label(parent, label);
+        if weight > self.cache_[cache_id].weight() {
+            assert!(parent <= std::u32::MAX as usize);
+            assert!(child <= std::u32::MAX as usize);
+            self.cache_[cache_id].set_parent(parent as u32);
+            self.cache_[cache_id].set_child(child as u32);
+            self.cache_[cache_id].set_weight(weight);
+        }
+    }
+
+    fn cache_rev(&mut self, parent: usize, child: usize, weight: f32) {
+        assert!(parent < child, "MARISA_RANGE_ERROR");
+        let cache_id = self.get_cache_id(child);
+        if weight > self.cache_[cache_id].weight() {
+            assert!(parent <= std::u32::MAX as usize);
+            assert!(child <= std::u32::MAX as usize);
+            self.cache_[cache_id].set_parent(parent as u32);
+            self.cache_[cache_id].set_child(child as u32);
+            self.cache_[cache_id].set_weight(weight);
+        }
+    }
+ 
     fn reserve_cache(&mut self, config: &Config, trie_id: usize,
                      num_keys: usize) {
         let mut cache_size: usize = if trie_id == 1 { 256 } else { 1 };
@@ -495,6 +541,7 @@ impl LoudsTrie {
     }
 }
 
+
 /*
     fn total_size() usize {
         louds_.total_size()
@@ -526,37 +573,7 @@ impl LoudsTrie {
         *self = LoudsTrie::new();
     }
 
-// FIXME: Use trait for this overloading business
-template <>
-void LoudsTrie::cache<Key>(usize parent, usize child,
-    float weight, char label) {
-  MARISA_DEBUG_IF(parent >= child, MARISA_RANGE_ERROR);
 
-  const usize cache_id = get_cache_id(parent, label);
-  if (weight > cache_[cache_id].weight()) {
-    cache_[cache_id].set_parent(parent);
-    cache_[cache_id].set_child(child);
-    cache_[cache_id].set_weight(weight);
-  }
-}
-
-template <>
-void LoudsTrie::cache<ReverseKey>(usize parent, usize child,
-    float weight, char) {
-  MARISA_DEBUG_IF(parent >= child, MARISA_RANGE_ERROR);
-
-  const usize cache_id = get_cache_id(child);
-  if (weight > cache_[cache_id].weight()) {
-    cache_[cache_id].set_parent(parent);
-    cache_[cache_id].set_child(child);
-    cache_[cache_id].set_weight(weight);
-  }
-}
-
-
-
-  
- 
     inline bool find_child(Agent &agent) const;
 
 bool LoudsTrie::find_child(Agent &agent) const {
