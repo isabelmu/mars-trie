@@ -208,7 +208,7 @@ impl LoudsTrie {
     }
 
     fn build_current_trie<'a, T>(
-        &mut self, keys: &mut Vec<T>, terminals: *mut Vec<u32>, config: &Config,
+        &mut self, keys: &mut Vec<T>, terminals: &mut Vec<u32>, config: &Config,
         trie_id: usize)
         where T: IKey<'a> + Ord + From<&'a[u8]>, Vec<T>: CallCache
     {
@@ -293,10 +293,12 @@ impl LoudsTrie {
                 } else {
                     self.bases_.push(0);
                     self.link_flags_.push(true);
-                    let next_key: T = T::from(keys[w_range.begin()].get_slice());
-                    //next_key.substr(w_range.key_pos(), key_pos - w_range.key_pos());
-                    //next_key.set_weight(w_range.weight());
-                    //next_keys.push(next_key);
+                    let mut next_key =
+                        T::from(keys[w_range.begin()].get_slice());
+                    next_key.subslice(w_range.key_pos(),
+                                      key_pos - w_range.key_pos());
+                    next_key.set_weight(w_range.weight());
+                    next_keys.push(next_key);
                 }
                 w_range.set_key_pos(key_pos);
                 queue.push_back(*w_range.range());
@@ -309,8 +311,8 @@ impl LoudsTrie {
         self.louds_.build(trie_id == 1, true);
         self.bases_.shrink_to_fit();
 
-        //build_terminals(keys, terminals);
-        std::mem::swap(keys, &mut next_keys);
+        self.build_terminals(keys, terminals);
+        *keys = next_keys;
     }
 
     fn cache_fwd(&mut self, parent: usize, child: usize, weight: f32, label: u8)
@@ -390,18 +392,16 @@ impl LoudsTrie {
         }
     }
 
-/*
-    fn build_terminals<T>(&self, keys: &Vec<T>,
-                          terminals: *mut Vec<u32>) {
-        Vec<u32> temp;
-        temp.resize(keys.size());
-        for (usize i = 0; i < keys.size(); ++i) {
-            temp[keys[i].id()] = (u32)keys[i].terminal();
+    fn build_terminals<'a, T>(&mut self, keys: &Vec<T>,
+                              terminals: &mut Vec<u32>)
+      where T: IKey<'a> + Ord + From<&'a[u8]> {
+        let mut temp: Vec<u32> = Vec::new();
+        temp.resize(keys.len(), 0);
+        for key in keys {
+            temp[key.get_id()] = key.get_terminal() as u32;
         }
-        terminals->swap(temp);
+        *terminals = temp;
     }
-
-*/
 
     fn fill_cache(&mut self) {
         for item in (&mut self.cache_).iter_mut() {
