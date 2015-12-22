@@ -67,6 +67,8 @@ pub trait IKey<'a> {
     fn get_weight(&self) -> f32;
     fn get_terminal(&self) -> usize;
     fn get_id(&self) -> usize;
+
+    fn len(&self) -> usize;
 }
 
 #[derive(Copy, Clone)]
@@ -124,6 +126,9 @@ impl<'a> IKey<'a> for Key<'a> {
     }
     fn get_id(&self) -> usize {
         self.id_ as usize
+    }
+    fn len(&self) -> usize {
+        self.get_slice().len()
     }
 }
 
@@ -208,6 +213,9 @@ impl<'a> IKey<'a> for ReverseKey<'a> {
     }
     fn get_id(&self) -> usize {
         self.id_ as usize
+    }
+    fn len(&self) -> usize {
+        self.get_slice().len()
     }
 }
 

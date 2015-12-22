@@ -80,7 +80,7 @@ impl BitVec {
     pub fn is_empty(&self) -> bool {
         self.size_ == 0
     }
-    pub fn size(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.size_
     }
 
@@ -114,8 +114,8 @@ impl BitVec {
         mem::swap(self, &mut old);
         let old = old;
 
-        let ranks_size = (old.size() / 512)
-                       + (if old.size() % 512 != 0 { 1 } else { 0 })
+        let ranks_size = (old.len() / 512)
+                       + (if old.len() % 512 != 0 { 1 } else { 0 })
                        + 1;
 
         vec_resize(&mut self.ranks_, ranks_size);
@@ -123,9 +123,9 @@ impl BitVec {
         let mut num_0s: usize = 0;
         let mut num_1s: usize = 0;
   
-        assert!(old.size() <= std::u32::MAX as usize);
+        assert!(old.len() <= std::u32::MAX as usize);
 
-        for i in 0..old.size() {
+        for i in 0..old.len() {
             if i % 64 == 0 {
                 let rank_id: usize = i / 512;
                 let nu = num_1s as u32 - self.ranks_[rank_id].abs();
@@ -155,11 +155,11 @@ impl BitVec {
             }
         }
   
-        if old.size() % 512 != 0 {
-            let rank_id = (old.size() - 1) / 512;
+        if old.len() % 512 != 0 {
+            let rank_id = (old.len() - 1) / 512;
             let nu = num_1s as u32 - self.ranks_[rank_id].abs();
             match_fallthrough!(
-                ((old.size() - 1) / 64) % 8,
+                ((old.len() - 1) / 64) % 8,
             {
                 0 => { self.ranks_[rank_id].set_rel1(nu); },
                 1 => { self.ranks_[rank_id].set_rel2(nu); },
@@ -174,16 +174,16 @@ impl BitVec {
             });
         }
 
-        self.size_ = old.size();
+        self.size_ = old.len();
         self.num_1s_ = old.num_1s();
 
         self.ranks_.last_mut().unwrap().set_abs(num_1s as u32);
         if enables_select0 {
-            self.select0s_.push(old.size() as u32);
+            self.select0s_.push(old.len() as u32);
             self.select0s_.shrink_to_fit();
         }
         if enables_select1 {
-            self.select1s_.push(old.size() as u32);
+            self.select1s_.push(old.len() as u32);
             self.select1s_.shrink_to_fit();
         }
 
@@ -491,7 +491,7 @@ impl BitVec {
         assert!(i < num_1s(), "MARISA_BOUND_ERROR");
     
         let select_id: usize = i / 512;
-        assert!((select_id + 1) < self.select1s_.size(), "MARISA_BOUND_ERROR");
+        assert!((select_id + 1) < self.select1s_.len(), "MARISA_BOUND_ERROR");
         if (i % 512) == 0 {
             return self.select1s_[select_id];
         }
@@ -977,7 +977,7 @@ mod test {
     impl qc::Arbitrary for BitVec {
         fn arbitrary<G: qc::Gen>(g: &mut G) -> BitVec {
             let mut v = BitVec::new();
-            let vec_size = { let s = g.size(); g.gen_range(0, s) };
+            let vec_size = { let s = g.len(); g.gen_range(0, s) };
             for _ in 0..vec_size {
                 v.push(g.gen());
             }

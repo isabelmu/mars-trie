@@ -209,91 +209,88 @@ impl LoudsTrie {
         let mut w_ranges: Vec<WeightedRange> = Vec::new();
 
         queue.push_back(Range::new(0, keys.len(), 0));
-/*
-        while (!queue.empty()) {
-          const usize node_id = link_flags_.size() - queue.size();
 
-          Range range = queue.front();
-          queue.pop();
+        while let Some(mut range) = queue.pop_front() {
+            let node_id: usize = self.link_flags_.len() - queue.len();
 
-          while ((range.begin() < range.end()) &&
-              (keys[range.begin()].length() == range.key_pos())) {
-            keys[range.begin()].set_terminal(node_id);
-            range.set_begin(range.begin() + 1);
-          }
-
-          if (range.begin() == range.end()) {
-            louds_.push(false);
-            continue;
-          }
-
-          w_ranges.clear();
-          double weight = keys[range.begin()].weight();
-          for (usize i = range.begin() + 1; i < range.end(); ++i) {
-            if (keys[i - 1][range.key_pos()] != keys[i][range.key_pos()]) {
-              w_ranges.push(make_weighted_range(
-                  range.begin(), i, range.key_pos(), (float)weight));
-              range.set_begin(i);
-              weight = 0.0;
+            while (range.begin() < range.end()) &&
+                  (keys[range.begin()].len() == range.key_pos()) {
+                keys[range.begin()].set_terminal(node_id);
+                let new_begin = range.begin() + 1;
+                range.set_begin(new_begin);
             }
-            weight += keys[i].weight();
-          }
-          w_ranges.push(make_weighted_range(
-              range.begin(), range.end(), range.key_pos(), (float)weight));
-          if (config.node_order() == MARISA_WEIGHT_ORDER) {
-            std::stable_sort(w_ranges.begin(), w_ranges.end(),
-                std::greater<WeightedRange>());
-          }
 
-          if (node_id == 0) {
-            num_l1_nodes_ = w_ranges.size();
-          }
+            if range.begin() == range.end() {
+                self.louds_.push(false);
+                continue;
+            }
 
-          for (usize i = 0; i < w_ranges.size(); ++i) {
-            WeightedRange &w_range = w_ranges[i];
-            usize key_pos = w_range.key_pos() + 1;
-            while (key_pos < keys[w_range.begin()].length()) {
-              usize j;
-              for (j = w_range.begin() + 1; j < w_range.end(); ++j) {
-                if (keys[j - 1][key_pos] != keys[j][key_pos]) {
-                  break;
+            w_ranges.clear();
+            let mut weight: f64 = keys[range.begin()].get_weight() as f64;
+            for i in (range.begin() + 1)..range.end() {
+                if keys[i - 1].at(range.key_pos())
+                != keys[i].at(range.key_pos()) {
+                    w_ranges.push(WeightedRange::new(
+                        range.begin(), i, range.key_pos(), weight as f32));
+                    range.set_begin(i);
+                    weight = 0.0;
                 }
-              }
-              if (j < w_range.end()) {
-                break;
-              }
-              ++key_pos;
+                weight += keys[i].get_weight() as f64;
             }
-            cache<T>(node_id, bases_.size(), w_range.weight(),
-                keys[w_range.begin()][w_range.key_pos()]);
+            w_ranges.push(WeightedRange::new(
+                range.begin(), range.end(), range.key_pos(), weight as f32));
+            if config.node_order() == NodeOrder::Weight {
+                // FIXME: This should be a std::stable_sort replacement. Not
+                //        sure if really needed... but I would guess it's not
+                //        here for no reason.
+                w_ranges.sort_by(|a, b| b.partial_cmp(a).unwrap()); // reverse
+            }
 
-            if (key_pos == w_range.key_pos() + 1) {
-              bases_.push(keys[w_range.begin()][w_range.key_pos()]);
-              link_flags_.push(false);
-            } else {
-              bases_.push('\0');
-              link_flags_.push(true);
-              T next_key;
-              next_key.set_str(keys[w_range.begin()].ptr(),
-                  keys[w_range.begin()].length());
-              next_key.substr(w_range.key_pos(), key_pos - w_range.key_pos());
-              next_key.set_weight(w_range.weight());
-              next_keys.push(next_key);
+            if node_id == 0 {
+                self.num_l1_nodes_ = w_ranges.len();
             }
-            w_range.set_key_pos(key_pos);
-            queue.push(w_range.range());
-            louds_.push(true);
-          }
-          louds_.push(false);
+
+            for w_range in &mut w_ranges {
+                let mut key_pos: usize = w_range.key_pos() + 1;
+                'l2: while key_pos < keys[w_range.begin()].len() {
+                    let mut j = w_range.begin() + 1;
+
+                    for j in (w_range.begin() + 1)..w_range.end() {
+                        if keys[j - 1].at(key_pos) != keys[j].at(key_pos) {
+                            break 'l2;
+                        }
+                    }
+                    key_pos += 1;
+                }
+                //cache<T>(node_id, bases_.size(), w_range.weight(),
+                //    keys[w_range.begin()][w_range.key_pos()]);
+
+                if key_pos == w_range.key_pos() + 1 {
+                    self.bases_.push(keys[w_range.begin()].at(w_range.key_pos()));
+                    self.link_flags_.push(false);
+                } else {
+                    self.bases_.push(0);
+                    self.link_flags_.push(true);
+                    //let next_key: T = std::Default::default();
+                    //next_key.set_str(keys[w_range.begin()].ptr(),
+                    //    keys[w_range.begin()].length());
+                    //next_key.substr(w_range.key_pos(), key_pos - w_range.key_pos());
+                    //next_key.set_weight(w_range.weight());
+                    //next_keys.push(next_key);
+                }
+                w_range.set_key_pos(key_pos);
+                queue.push_back(*w_range.range());
+                self.louds_.push(true);
+            }
+            self.louds_.push(false);
         }
 
-        louds_.push(false);
-        louds_.build(trie_id == 1, true);
-        bases_.shrink();
+        self.louds_.push(false);
+        self.louds_.build(trie_id == 1, true);
+        self.bases_.shrink_to_fit();
 
-        build_terminals(keys, terminals);
-        keys.swap(next_keys);
-*/
+        //build_terminals(keys, terminals);
+        std::mem::swap(keys, &mut next_keys);
     }
 
     fn reserve_cache(&mut self, config: &Config, trie_id: usize,
@@ -456,7 +453,7 @@ impl LoudsTrie {
         self.size()
     }
     fn num_nodes(&self) -> usize {
-        (self.louds_.size() / 2) - 1
+        (self.louds_.len() / 2) - 1
     }
     fn cache_level(&self) -> CacheLevel {
         self.config_.cache_level()

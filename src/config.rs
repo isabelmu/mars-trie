@@ -89,7 +89,7 @@ impl Default for TailMode {
 
 /// The arrangement of nodes affects the time cost of matching and the order of
 /// predictive search.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 pub enum NodeOrder {
     /// Arrange nodes in ascending label order. Useful if an application needs
     /// to predict keys in label order.
