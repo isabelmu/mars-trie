@@ -23,11 +23,14 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 use std;
+use std::collections::VecDeque;
 
 use config::Config;
 use config::CacheLevel;
 use config::NodeOrder;
 use config::TailMode;
+use trie::range::Range;
+use trie::range::WeightedRange;
 use trie::cache::Cache;
 use trie::entry::Entry;
 use trie::key::IKey;
@@ -196,16 +199,16 @@ impl LoudsTrie {
         let num_keys = keys.len();
 
         self.reserve_cache(config, trie_id, num_keys);
+        self.louds_.push(true);
+        self.louds_.push(false);
+        self.bases_.push(0);
+        self.link_flags_.push(false);
+
+        let next_keys: Vec<T> = Vec::new();
+        let queue: VecDeque<Range> = VecDeque::new();
+        let w_ranges: Vec<WeightedRange> = Vec::new();
+
 /*
-        louds_.push(true);
-        louds_.push(false);
-        bases_.push('\0');
-        link_flags_.push(false);
-
-        Vec<T> next_keys;
-        std::queue<Range> queue;
-        Vec<WeightedRange> w_ranges;
-
         queue.push(make_range(0, keys.size(), 0));
         while (!queue.empty()) {
           const usize node_id = link_flags_.size() - queue.size();

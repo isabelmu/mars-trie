@@ -102,6 +102,7 @@ impl RankIndex {
     }
 }
 
+#[cfg(test)]
 mod test {
     use super::RankIndex;
 

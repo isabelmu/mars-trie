@@ -25,7 +25,7 @@
 use std;
 
 #[derive(Copy, Clone)]
-struct Range {
+pub struct Range {
     begin_: u32,
     end_: u32,
     key_pos_: u32,
@@ -65,7 +65,7 @@ impl Range {
 }
 
 #[derive(Copy, Clone)]
-struct WeightedRange {
+pub struct WeightedRange {
     range_: Range,
     weight_: f32,
 }
