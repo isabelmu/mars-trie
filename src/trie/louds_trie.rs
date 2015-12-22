@@ -165,7 +165,8 @@ impl LoudsTrie {
     fn build_trie<'a, T>(
         &mut self, keys: &mut Vec<T>, terminals: &mut Vec<u32>,
         config: &mut Config, trie_id: usize)
-        where T: IKey<'a> + Ord, Vec<T>: CallCache + CallBuildNextTrie
+        where T: IKey<'a> + Ord + From<&'a[u8]>,
+              Vec<T>: CallCache + CallBuildNextTrie
     {
         self.build_current_trie(keys, terminals, config, trie_id);
 
@@ -209,7 +210,7 @@ impl LoudsTrie {
     fn build_current_trie<'a, T>(
         &mut self, keys: &mut Vec<T>, terminals: *mut Vec<u32>, config: &Config,
         trie_id: usize)
-        where T: IKey<'a> + Ord, Vec<T>: CallCache
+        where T: IKey<'a> + Ord + From<&'a[u8]>, Vec<T>: CallCache
     {
         for (i, key) in keys.iter_mut().enumerate() {
             key.set_id(i);
@@ -292,9 +293,7 @@ impl LoudsTrie {
                 } else {
                     self.bases_.push(0);
                     self.link_flags_.push(true);
-                    //let next_key: T = std::Default::default();
-                    //next_key.set_str(keys[w_range.begin()].ptr(),
-                    //    keys[w_range.begin()].length());
+                    let next_key: T = T::from(keys[w_range.begin()].get_slice());
                     //next_key.substr(w_range.key_pos(), key_pos - w_range.key_pos());
                     //next_key.set_weight(w_range.weight());
                     //next_keys.push(next_key);

@@ -92,6 +92,12 @@ impl<'a> Key<'a> {
     }
 }
 
+impl<'a> From<&'a[u8]> for Key<'a> {
+    fn from(slice: &'a[u8]) -> Key<'a> {
+        Key::new(slice)
+    }
+}
+
 impl<'a> IKey<'a> for Key<'a> {
     fn at(&self, i: usize) -> u8 {
         self.slice_[i]
@@ -174,6 +180,12 @@ impl<'a> ReverseKey<'a> {
     }
     pub fn from_key<T: IKey<'a>>(key: &T) -> Self {
         Self::new(key.get_slice()).with_weight(key.get_weight())
+    }
+}
+
+impl<'a> From<&'a[u8]> for ReverseKey<'a> {
+    fn from(slice: &'a[u8]) -> ReverseKey<'a> {
+        ReverseKey::new(slice)
     }
 }
 
