@@ -120,6 +120,10 @@ impl LoudsTrie {
         }
     }
 
+    pub fn clear(&mut self) {
+        *self = LoudsTrie::new();
+    }
+
     pub fn build<'a>(keys: &mut Vec<Key<'a> >, flags: u32) -> LoudsTrie {
         let mut config = Config::parse(flags);
         let mut out = LoudsTrie::new();
@@ -538,8 +542,12 @@ impl LoudsTrie {
         ((self.bases_[node_id] as u32) | (self.extras_.at(link_id) * 256))
             as usize
     }
-}
 
+    fn update_link_id(&self, link_id: usize, node_id: usize) -> usize {
+        if link_id == INVALID_LINK_ID { self.link_flags_.rank1(node_id) }
+                                 else { link_id + 1 }
+    }
+}
 
 /*
     fn total_size() usize {
@@ -567,69 +575,9 @@ impl LoudsTrie {
         + cache_.io_size()
         + (sizeof(u32) * 2)
     }
+*/
 
-    fn clear(&mut self) {
-        *self = LoudsTrie::new();
-    }
-
-
-    inline bool find_child(Agent &agent) const;
-
-bool LoudsTrie::find_child(Agent &agent) const {
-  MARISA_DEBUG_IF(agent.state().query_pos() >= agent.query().length(),
-      MARISA_BOUND_ERROR);
-
-  State &state = agent.state();
-  const usize cache_id = get_cache_id(state.node_id(),
-      agent.query()[state.query_pos()]);
-  if (state.node_id() == cache_[cache_id].parent()) {
-    if (cache_[cache_id].extra() != MARISA_INVALID_EXTRA) {
-      if (!match(agent, cache_[cache_id].link())) {
-        return false;
-      }
-    } else {
-      state.set_query_pos(state.query_pos() + 1);
-    }
-    state.set_node_id(cache_[cache_id].child());
-    return true;
-  }
-
-  usize louds_pos = louds_.select0(state.node_id()) + 1;
-  if (!louds_[louds_pos]) {
-    return false;
-  }
-  state.set_node_id(louds_pos - state.node_id() - 1);
-  usize link_id = MARISA_INVALID_LINK_ID;
-  do {
-    if (link_flags_[state.node_id()]) {
-      link_id = update_link_id(link_id, state.node_id());
-      const usize prev_query_pos = state.query_pos();
-      if (match(agent, get_link(state.node_id(), link_id))) {
-        return true;
-      } else if (state.query_pos() != prev_query_pos) {
-        return false;
-      }
-    } else if (bases_[state.node_id()] ==
-        (u8)agent.query()[state.query_pos()]) {
-      state.set_query_pos(state.query_pos() + 1);
-      return true;
-    }
-    state.set_node_id(state.node_id() + 1);
-    ++louds_pos;
-  } while (louds_[louds_pos]);
-  return false;
-}
-
-    inline usize update_link_id(usize link_id,
-        usize node_id) const;
-
-usize LoudsTrie::update_link_id(usize link_id,
-    usize node_id) const {
-  return (link_id == MARISA_INVALID_LINK_ID) ?
-      link_flags_.rank1(node_id) : (link_id + 1);
-}
-
-}
+/*
 
 */
 
