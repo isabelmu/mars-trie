@@ -544,8 +544,12 @@ impl LoudsTrie {
     }
 
     fn update_link_id(&self, link_id: usize, node_id: usize) -> usize {
-        if link_id == INVALID_LINK_ID { self.link_flags_.rank1(node_id) }
-                                 else { link_id + 1 }
+        if link_id == INVALID_LINK_ID as usize
+        {
+            self.link_flags_.rank1(node_id)
+        } else {
+            link_id + 1
+        }
     }
 }
 
