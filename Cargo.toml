@@ -1,5 +1,5 @@
 [package]
-name = "mars"
+name = "mars-trie"
 version = "0.1.0"
 authors = ["Johannes Muenzel <jmuenzel@gmail.com>"]
 
