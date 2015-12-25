@@ -181,19 +181,17 @@ impl LoudsTrie {
 
         match &self.next_trie_ {
             &Some(ref x) => {
-                let new_cfg =
-                    (x.num_tries() + 1) as usize
-                    | x.tail_mode() as usize
-                    | x.node_order() as usize;
+                let new_cfg = (x.num_tries() + 1) as usize
+                            | x.tail_mode() as usize
+                            | x.node_order() as usize;
                 assert!(new_cfg <= std::u32::MAX as usize);
                 *config = Config::parse(new_cfg as u32);
             },
             &None => {
-                let new_cfg =
-                    1
-                    | self.tail_.mode() as usize
-                    | config.node_order() as usize
-                    | config.cache_level() as usize;
+                let new_cfg = 1
+                            | self.tail_.mode() as usize
+                            | config.node_order() as usize
+                            | config.cache_level() as usize;
                 *config = Config::parse(new_cfg as u32);
             }
         }
@@ -236,7 +234,7 @@ impl LoudsTrie {
         queue.push_back(Range::new(0, keys.len(), 0));
 
         while let Some(mut range) = queue.pop_front() {
-            let node_id: usize = self.link_flags_.len() - queue.len();
+            let node_id: usize = self.link_flags_.len() - queue.len() - 1;
 
             while (range.begin() < range.end()) &&
                   (keys[range.begin()].len() == range.key_pos()) {
@@ -278,8 +276,6 @@ impl LoudsTrie {
             for w_range in &mut w_ranges {
                 let mut key_pos: usize = w_range.key_pos() + 1;
                 'l2: while key_pos < keys[w_range.begin()].len() {
-                    let mut j = w_range.begin() + 1;
-
                     for j in (w_range.begin() + 1)..w_range.end() {
                         if keys[j - 1].at(key_pos) != keys[j].at(key_pos) {
                             break 'l2;
@@ -292,7 +288,8 @@ impl LoudsTrie {
                            keys[w_range.begin()].at(w_range.key_pos()));
 
                 if key_pos == w_range.key_pos() + 1 {
-                    self.bases_.push(keys[w_range.begin()].at(w_range.key_pos()));
+                    self.bases_.push(keys[w_range.begin()]
+                                     .at(w_range.key_pos()));
                     self.link_flags_.push(false);
                 } else {
                     self.bases_.push(0);
@@ -681,12 +678,14 @@ void LoudsTrie::write_(Writer &writer) const {
 
 #[cfg(test)]
 mod test {
+    use env_logger;
     use config::Config;
     use trie::key::Key;
     use super::LoudsTrie;
 
     #[test]
     fn test_louds_trie() {
+        let _ = env_logger::init();
         let config = Config::new();
         let mut keys: Vec<Key> = Vec::new();
         keys.push(Key::new("test".as_bytes()));
