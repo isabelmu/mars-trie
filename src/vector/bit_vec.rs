@@ -962,11 +962,11 @@ const SELECT_TABLE: [[u8; 256]; 8] =
 
 #[cfg(test)]
 mod test {
-    use std;
     use base::WORD_SIZE;
-    use super::BitVec;
-    use quickcheck as qc;
     use env_logger;
+    use quickcheck as qc;
+    use std;
+    use super::BitVec;
 
     fn build_same(old: &BitVec, new: &mut BitVec) {
         if old.is_rank_enabled() {

@@ -128,15 +128,14 @@ impl LoudsTrie {
         let mut config = *config;
         let mut out = LoudsTrie::new();
 
+        let mut keys_cpy = keys.clone();
         let mut terminals: Vec<u32> = Vec::new();
-        out.build_trie(keys, &mut terminals, &mut config, 1);
+        out.build_trie(&mut keys_cpy, &mut terminals, &mut config, 1);
 
         let mut pairs: Vec<(u32, u32)> = Vec::new();
-        pairs.resize(terminals.len(), (0, 0));
-        for (i, pair) in (&mut pairs).iter_mut().enumerate() {
-            pair.0 = terminals[i];
-            pair.1 = i as u32;
-        }
+        let mut pairs: Vec<(u32, u32)> = terminals.iter().enumerate()
+                                         .map(|(i, &x)| (x, i as u32))
+                                         .collect();
         terminals.clear();
         pairs.sort();
 
@@ -160,9 +159,13 @@ impl LoudsTrie {
         out.terminal_flags_.push(false);
         out.terminal_flags_.build(false, true);
 
-        //for pair in &pairs {
-        //    keyset[pair.1].set_id(terminal_flags_.rank1(pair.0));
-        //}
+        for pair in &pairs {
+            debug!("pair.0: {:?}. r1: {:?}", pair.0, 
+                   out.terminal_flags_.rank1(pair.0 as usize));
+
+            keys[pair.1 as usize].set_id(
+                out.terminal_flags_.rank1(pair.0 as usize));
+        }
         out
     }
 
@@ -427,7 +430,7 @@ impl LoudsTrie {
     }
 
     pub fn id_lookup_into_vec(&self, id: usize, key_out: &mut Vec<u8>) {
-        assert!(id < self.size());
+        assert!(id < self.len());
         key_out.clear();
 
         let mut node_id = self.terminal_flags_.select1(id);
@@ -496,7 +499,7 @@ impl LoudsTrie {
         self.config_.num_tries().get() as usize
     }
     fn num_keys(&self) -> usize {
-        self.size()
+        self.len()
     }
     fn num_nodes(&self) -> usize {
         (self.louds_.len() / 2) - 1
@@ -512,9 +515,9 @@ impl LoudsTrie {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.size() == 0
+        self.len() == 0
     }
-    pub fn size(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.terminal_flags_.num_1s()
     }
 
@@ -576,13 +579,7 @@ impl LoudsTrie {
         + cache_.io_size()
         + (sizeof(u32) * 2)
     }
-*/
 
-/*
-
-*/
-
-/*
     fn map(mapper: &mut Mapper) -> LoudsTrie {
         Header().map(mapper);
     
@@ -680,16 +677,35 @@ void LoudsTrie::write_(Writer &writer) const {
 mod test {
     use env_logger;
     use config::Config;
-    use trie::key::Key;
+    use quickcheck as qc;
+    use std;
     use super::LoudsTrie;
+    use trie::key::Key;
+    use trie::key::IKey;
 
     #[test]
-    fn test_louds_trie() {
+    fn louds_trie_build() {
         let _ = env_logger::init();
-        let config = Config::new();
-        let mut keys: Vec<Key> = Vec::new();
-        keys.push(Key::new("test".as_bytes()));
-        let _trie = LoudsTrie::build(&mut keys, &config);
+
+        fn prop(v: Vec<String>) -> bool {
+            let mut keys: Vec<Key> = v.iter().map(|s| Key::new(s.as_bytes()))
+                                     .collect();
+
+            let config = Config::new();
+            let trie = LoudsTrie::build(&mut keys, &config);
+            debug!("keys: {:?}", keys);
+            for key in keys {
+                let s = trie.id_lookup(key.get_id());
+                if !s.iter().eq(key.get_slice().iter()) {
+                    return false;
+                }
+            }
+            //for id in 0..trie.len() {
+            //    trie.id_lookup(id);
+            //}
+            true
+        }
+        qc::quickcheck(prop as fn(Vec<String>) -> bool);
     }
 }
 

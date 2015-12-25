@@ -25,7 +25,7 @@
 use std;
 use trie::entry::Entry;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 struct Union {
     // weight or terminal
     bits_: u32,
@@ -71,7 +71,7 @@ pub trait IKey<'a> {
     fn len(&self) -> usize;
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Key<'a> {
     slice_: &'a[u8],
     union_: Union,
@@ -159,7 +159,7 @@ impl<'a> Ord for Key<'a> {
 }
 
 /// Just like Key, except we index and subslice from the end of the slice
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct ReverseKey<'a> {
     slice_: &'a[u8],
     union_: Union,
