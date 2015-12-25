@@ -977,7 +977,7 @@ mod test {
     impl qc::Arbitrary for BitVec {
         fn arbitrary<G: qc::Gen>(g: &mut G) -> BitVec {
             let mut v = BitVec::new();
-            let vec_size = { let s = g.len(); g.gen_range(0, s) };
+            let vec_size = { let s = g.size(); g.gen_range(0, s) };
             for _ in 0..vec_size {
                 v.push(g.gen());
             }

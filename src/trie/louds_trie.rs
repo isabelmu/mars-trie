@@ -124,8 +124,8 @@ impl LoudsTrie {
         *self = LoudsTrie::new();
     }
 
-    pub fn build<'a>(keys: &mut Vec<Key<'a> >, flags: u32) -> LoudsTrie {
-        let mut config = Config::parse(flags);
+    pub fn build<'a>(keys: &mut Vec<Key<'a> >, config: &Config) -> LoudsTrie {
+        let mut config = *config;
         let mut out = LoudsTrie::new();
 
         let mut terminals: Vec<u32> = Vec::new();
@@ -678,4 +678,19 @@ void LoudsTrie::write_(Writer &writer) const {
   writer.write((u32)config_.flags());
 }
 */
+
+#[cfg(test)]
+mod test {
+    use config::Config;
+    use trie::key::Key;
+    use super::LoudsTrie;
+
+    #[test]
+    fn test_louds_trie() {
+        let config = Config::new();
+        let mut keys: Vec<Key> = Vec::new();
+        keys.push(Key::new("test".as_bytes()));
+        let _trie = LoudsTrie::build(&mut keys, &config);
+    }
+}
 
