@@ -45,6 +45,7 @@ use base::INVALID_LINK_ID;
 pub const INVALID_EXTRA: u32 = std::u32::MAX >> 8;
 
 /// Recursive LOUDS trie
+#[derive(Debug)]
 pub struct LoudsTrie {
     louds_: BitVec,
     terminal_flags_: BitVec,
@@ -160,8 +161,8 @@ impl LoudsTrie {
         out.terminal_flags_.build(false, true);
 
         for pair in &pairs {
-            debug!("pair.0: {:?}. r1: {:?}", pair.0, 
-                   out.terminal_flags_.rank1(pair.0 as usize));
+            //debug!("pair.0: {:?}. r1: {:?}", pair.0, 
+            //       out.terminal_flags_.rank1(pair.0 as usize));
 
             keys[pair.1 as usize].set_id(
                 out.terminal_flags_.rank1(pair.0 as usize));
@@ -689,10 +690,11 @@ mod test {
 
         let config = Config::new();
         let trie = LoudsTrie::build(&mut keys, &config);
-        debug!("keys: {:?}", keys);
+        //debug!("trie: {:?}", trie);
+        //debug!("keys: {:?}", keys);
         for key in keys {
             let s = trie.id_lookup(key.get_id());
-            debug!("s: {:?}", s);
+            //debug!("s: {:?}", s);
             if !s.iter().eq(key.get_slice().iter()) {
                 return false;
             }

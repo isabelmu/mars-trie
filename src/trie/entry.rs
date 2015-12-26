@@ -22,6 +22,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+use std;
 use std::cmp::Ordering;
 use iter_util::common_count_eq;
 
@@ -40,8 +41,11 @@ impl<'a> Entry<'a> {
     pub fn len(&self) -> usize {
         self.slice_.len()
     }
-    pub fn get_slice(&self) -> &'a [u8] {
-        self.slice_
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+    pub fn iter(&self) -> std::iter::Rev<std::slice::Iter<'a, u8> > {
+        self.slice_.iter().rev()
     }
     pub fn set_slice(&mut self, slice: &'a [u8]) {
         self.slice_ = slice;
@@ -51,6 +55,14 @@ impl<'a> Entry<'a> {
     }
     pub fn set_id(&mut self, id: u32) {
         self.id_ = id;
+    }
+}
+
+impl<'a> IntoIterator for &'a Entry<'a> {
+    type Item = &'a u8;
+    type IntoIter = std::iter::Rev<std::slice::Iter<'a, u8> >;
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
     }
 }
 

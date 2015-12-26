@@ -29,7 +29,7 @@
 
 /// A dictionary consists of 3 tries by default. Usually more tries make a
 /// dictionary space-efficient but time-inefficient.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct NumTries { num_: u32 }
 pub const MIN_NUM_TRIES: u32 = 0x00001;
 pub const MAX_NUM_TRIES: u32 = 0x0007F;
@@ -51,7 +51,7 @@ impl Default for NumTries {
 /// This library uses a cache technique to accelerate search functions. The
 /// following enumerated type gives a list of available cache size options. A
 /// larger cache enables faster search but takes a more space.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum CacheLevel {
     Huge   = 0x00080,
     Large  = 0x00100,
@@ -66,7 +66,7 @@ impl Default for CacheLevel {
 }
 
 /// This library provides 2 kinds of TAIL implementations.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum TailMode {
     /// Merge last labels as zero-terminated strings. Available if and only if
     /// last labels do not contain a null character.
@@ -89,7 +89,7 @@ impl Default for TailMode {
 
 /// The arrangement of nodes affects the time cost of matching and the order of
 /// predictive search.
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum NodeOrder {
     /// Arrange nodes in ascending label order. Useful if an application needs
     /// to predict keys in label order.
@@ -112,7 +112,7 @@ const TAIL_MODE_MASK   : u32 = 0x0F000;
 const NODE_ORDER_MASK  : u32 = 0xF0000;
 const CONFIG_MASK      : u32 = 0xFFFFF;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Config {
     num_tries_: NumTries,
     cache_level_: CacheLevel,

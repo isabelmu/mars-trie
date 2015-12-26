@@ -24,7 +24,7 @@
 
 use std;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 struct Union {
     /// link: u32 or weight: f32
     bits_: u32,
@@ -48,7 +48,7 @@ impl Union {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Cache {
     parent_: u32,
     child_: u32,

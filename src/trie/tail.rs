@@ -28,6 +28,7 @@ use trie::entry;
 use trie::entry::Entry;
 use vector::bit_vec::BitVec;
 
+#[derive(Debug)]
 pub struct Tail {
     buf_: Vec<u8>,
     end_flags_: BitVec,
@@ -43,7 +44,7 @@ impl Tail {
         let mode = match mode {
             TailMode::Text => {
                 if entries.iter().any(
-                  |entry| entry.get_slice().iter().any(|x| *x == 0)) {
+                  |entry| entry.iter().any(|x| *x == 0)) {
                     TailMode::Binary
                 } else {
                     TailMode::Text
@@ -68,14 +69,11 @@ impl Tail {
 
         let mut optLast: Option<&Entry> = None;
         for entry in entries.iter().rev() {
-            assert!(!entry.get_slice().is_empty(), "MARISA_RANGE_ERROR");
+            assert!(!entry.is_empty(), "MARISA_RANGE_ERROR");
 
             let doPush = match optLast {
                 Some(last) => {
-                    // Do we really need the not-zero condition? Or was marisa
-                    // just using it as Option?
-                    if last.len() != 0
-                    && entry.common_count(last) == entry.len() {
+                    if entry.common_count(last) == entry.len() {
                         let diff = last.len() - entry.len();
                         assert!(diff <= std::u32::MAX as usize);
                         let diff = diff as u32;
@@ -92,7 +90,7 @@ impl Tail {
             if doPush {
                 tmp[entry.get_id() as usize] = out.buf_.len() as u32;
 
-                out.buf_.extend(entry.get_slice().iter().rev());
+                out.buf_.extend(entry.iter().rev());
 
                 match mode {
                     TailMode::Text => { out.buf_.push(0); },
