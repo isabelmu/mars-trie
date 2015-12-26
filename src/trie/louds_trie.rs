@@ -683,29 +683,36 @@ mod test {
     use trie::key::Key;
     use trie::key::IKey;
 
-    #[test]
-    fn louds_trie_build() {
-        let _ = env_logger::init();
+    fn build_prop(v: Vec<String>) -> bool {
+        let mut keys: Vec<Key> = v.iter().map(|s| Key::new(s.as_bytes()))
+                                 .collect();
 
-        fn prop(v: Vec<String>) -> bool {
-            let mut keys: Vec<Key> = v.iter().map(|s| Key::new(s.as_bytes()))
-                                     .collect();
-
-            let config = Config::new();
-            let trie = LoudsTrie::build(&mut keys, &config);
-            debug!("keys: {:?}", keys);
-            for key in keys {
-                let s = trie.id_lookup(key.get_id());
-                if !s.iter().eq(key.get_slice().iter()) {
-                    return false;
-                }
+        let config = Config::new();
+        let trie = LoudsTrie::build(&mut keys, &config);
+        debug!("keys: {:?}", keys);
+        for key in keys {
+            let s = trie.id_lookup(key.get_id());
+            debug!("s: {:?}", s);
+            if !s.iter().eq(key.get_slice().iter()) {
+                return false;
             }
-            //for id in 0..trie.len() {
-            //    trie.id_lookup(id);
-            //}
-            true
         }
-        qc::quickcheck(prop as fn(Vec<String>) -> bool);
+        //for id in 0..trie.len() {
+        //    trie.id_lookup(id);
+        //}
+        true
+    }
+
+    #[test]
+    fn louds_trie_build_qc() {
+        let _ = env_logger::init();
+        qc::quickcheck(build_prop as fn(Vec<String>) -> bool);
+    }
+
+    #[test]
+    fn louds_trie_build_manual() {
+        let _ = env_logger::init();
+        assert!(build_prop(vec!["\u{80}".to_string()]));
     }
 }
 
