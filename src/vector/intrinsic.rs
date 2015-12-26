@@ -46,7 +46,7 @@ impl Ctz for u16 {
 
 impl Ctz for u32 {
     fn ctz(self) -> u32 {
-        let mut v = self;
+        let v = self;
         let mut c: u32 = 32;
         let v = v & ((-(v as i32)) as u32);
         if 0 != v { c -= 1; }
@@ -61,7 +61,7 @@ impl Ctz for u32 {
 
 impl Ctz for u64 {
     fn ctz(self) -> u32 {
-        let mut v = self;
+        let v = self;
         let mut c: u32 = 64;
         let v = v & ((-(v as i64)) as u64);
         if 0 != v { c -= 1; }

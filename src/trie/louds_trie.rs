@@ -715,6 +715,8 @@ mod test {
     fn louds_trie_build_manual() {
         let _ = env_logger::init();
         assert!(build_prop(vec!["\u{80}".to_string()]));
+        assert!(build_prop(vec!["\u{4b8ca}".to_string(),
+                                "\u{d2c4a}".to_string()]));
     }
 }
 
