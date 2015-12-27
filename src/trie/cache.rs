@@ -91,7 +91,7 @@ impl Cache {
         (self.union_.get_link() & 0xFFu32) as u8
     }
     pub fn extra(&self) -> u32 {
-        (self.union_.get_link() & 0x00FFFFFFu32) >> 8
+        (self.union_.get_link() & 0xFFFFFF00u32) >> 8
     }
     pub fn label(&self) -> u8 {
         self.base()

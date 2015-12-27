@@ -147,6 +147,36 @@ impl Config {
         | (self.node_order_ as u32)
     }
 
+    pub fn with_num_tries(mut self, num_tries: NumTries) -> Config {
+        self.set_num_tries(num_tries);
+        self
+    }
+    pub fn with_cache_level(mut self, cache_level: CacheLevel) -> Config {
+        self.set_cache_level(cache_level);
+        self
+    }
+    pub fn with_tail_mode(mut self, tail_mode: TailMode) -> Config {
+        self.set_tail_mode(tail_mode);
+        self
+    }
+    pub fn with_node_order(mut self, node_order: NodeOrder) -> Config {
+        self.set_node_order(node_order);
+        self
+    }
+
+    pub fn set_num_tries(&mut self, num_tries: NumTries) {
+        self.num_tries_ = num_tries;
+    }
+    pub fn set_cache_level(&mut self, cache_level: CacheLevel) {
+        self.cache_level_ = cache_level;
+    }
+    pub fn set_tail_mode(&mut self, tail_mode: TailMode) {
+        self.tail_mode_ = tail_mode;
+    }
+    pub fn set_node_order(&mut self, node_order: NodeOrder) {
+        self.node_order_ = node_order;
+    }
+
     pub fn num_tries(&self) -> NumTries {
         self.num_tries_
     }

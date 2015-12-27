@@ -92,6 +92,10 @@ impl BitVec {
     }
 
     pub fn at(&self, i: usize) -> bool {
+        if i >= self.size_ {
+            debug!("\"i >= self.size_\" where i is {:?} and self.size_ is {:?}",
+                   i, self.size_);
+        }
         assert!(i < self.size_, "MARISA_BOUND_ERROR");
         (self.units_[i / WORD_SIZE] & (1usize << (i % WORD_SIZE))) != 0
     }

@@ -160,9 +160,10 @@ impl LoudsTrie {
         out.terminal_flags_.push(false);
         out.terminal_flags_.build(false, true);
 
+        assert!(pairs.len() == keys.len());
         for pair in &pairs {
-            //debug!("pair.0: {:?}. r1: {:?}", pair.0, 
-            //       out.terminal_flags_.rank1(pair.0 as usize));
+            debug!("pair.0: {:?}, pair.1: {:?}, r1: {:?})", pair.0, pair.1,
+                   out.terminal_flags_.rank1(pair.0 as usize));
 
             keys[pair.1 as usize].set_id(
                 out.terminal_flags_.rank1(pair.0 as usize));
@@ -431,6 +432,7 @@ impl LoudsTrie {
     }
 
     pub fn id_lookup_into_vec(&self, id: usize, key_out: &mut Vec<u8>) {
+        debug!("id_lookup_into_vec(id: {:?}, key_out: {:?})", id, key_out);
         assert!(id < self.len());
         key_out.clear();
 
@@ -439,6 +441,7 @@ impl LoudsTrie {
             return;
         }
         loop {
+            debug!("lookup loop @ node_id {:?}", node_id);
             if self.link_flags_.at(node_id) {
                 let prev_key_pos = key_out.len();
                 self.restore(self.get_link(node_id), key_out);
@@ -447,6 +450,7 @@ impl LoudsTrie {
                 key_out.push(self.bases_[node_id]);
             }
             if node_id <= self.num_l1_nodes_ {
+                debug!("exiting loop");
                 key_out.reverse();
                 return;
             }
@@ -455,23 +459,31 @@ impl LoudsTrie {
     }
 
     fn restore(&self, link: usize, key_out: &mut Vec<u8>) {
+        debug!("restore(link: {:?}, key_out: {:?})", link, key_out);
         match &self.next_trie_ {
             &Some(ref next) => {
+                debug!("next");
                 next.restore_(link, key_out);
             },
             &None => {
+                debug!("tail");
                 self.tail_.restore(link, key_out);
             }
         }
     }
 
     fn restore_(&self, node_id: usize, key_out: &mut Vec<u8>) {
+        debug!("restore_(node_id: {:?}, key_out: {:?})", node_id, key_out);
         assert!(node_id != 0, "MARISA_RANGE_ERROR");
 
         let mut node_id = node_id;
         loop {
+            debug!("restore_ loop @ node_id {:?}", node_id);
             let cache_id = self.get_cache_id(node_id);
             if node_id == self.cache_[cache_id].child() as usize {
+                debug!("b1");
+                debug!("self.cache_[cache_id].extra(): {:?}",
+                       self.cache_[cache_id].extra());
                 if self.cache_[cache_id].extra() != INVALID_EXTRA {
                     self.restore(self.cache_[cache_id].link() as usize,
                                  key_out);
@@ -479,16 +491,19 @@ impl LoudsTrie {
                     key_out.push(self.cache_[cache_id].label());
                 }
                 node_id = self.cache_[cache_id].parent() as usize;
+                debug!("node_id from cache: {:?}", node_id);
                 if node_id == 0 {
                     return;
                 }
             } else {
+                debug!("b2");
                 if self.link_flags_.at(node_id) {
                     self.restore(self.get_link(node_id), key_out);
                 } else {
                     key_out.push(self.bases_[node_id]);
                 }
                 if node_id <= self.num_l1_nodes_ {
+                    debug!("node_id was <= num_l1_nodes_");
                     return;
                 }
                 node_id = self.louds_.select1(node_id) - node_id - 1;
@@ -678,6 +693,7 @@ void LoudsTrie::write_(Writer &writer) const {
 mod test {
     use env_logger;
     use config::Config;
+    use config::NumTries;
     use quickcheck as qc;
     use std;
     use super::LoudsTrie;
@@ -688,11 +704,15 @@ mod test {
         let mut keys: Vec<Key> = v.iter().map(|s| Key::new(s.as_bytes()))
                                  .collect();
 
+        //let config = Config::new().with_num_tries(NumTries::new(1));
         let config = Config::new();
+        debug!("build!!!");
         let trie = LoudsTrie::build(&mut keys, &config);
         //debug!("trie: {:?}", trie);
         //debug!("keys: {:?}", keys);
+        debug!("check!!!");
         for key in keys {
+            debug!("key.get_id(): {:?}", key.get_id());
             let s = trie.id_lookup(key.get_id());
             //debug!("s: {:?}", s);
             if !s.iter().eq(key.get_slice().iter()) {
@@ -714,7 +734,11 @@ mod test {
     #[test]
     fn louds_trie_build_manual() {
         let _ = env_logger::init();
-        assert!(build_prop(vec!["\u{80}".to_string()]));
+
+        //debug!("{:?}", "\u{4b8ca}".as_bytes());
+        //debug!("{:?}", "\u{d2c4a}".as_bytes());
+
+        //assert!(build_prop(vec!["\u{80}".to_string()]));
         assert!(build_prop(vec!["\u{4b8ca}".to_string(),
                                 "\u{d2c4a}".to_string()]));
     }

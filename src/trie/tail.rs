@@ -113,6 +113,7 @@ impl Tail {
     }
 
     pub fn restore(&self, offset: usize, key_out: &mut Vec<u8>) {
+        debug!("restore(offset: {:?}, key_out: {:?}", offset, key_out);
         assert!(!self.buf_.is_empty(), "MARISA_STATE_ERROR");
 
         if self.end_flags_.is_empty() {
