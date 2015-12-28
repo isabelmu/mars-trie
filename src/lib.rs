@@ -16,7 +16,6 @@ mod history;
 mod key;
 mod louds_trie;
 mod range;
-//pub mod state;
 mod tail;
 
 #[cfg(test)]
