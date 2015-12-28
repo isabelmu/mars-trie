@@ -675,45 +675,65 @@ void LoudsTrie::write_(Writer &writer) const {
 #[cfg(test)]
 mod test {
     use env_logger;
-    use config::Config;
-    use config::NumTries;
+    use config::{Config, MAX_NUM_TRIES, MIN_NUM_TRIES, NumTries};
     use quickcheck as qc;
     use std;
+    use std::default::Default;
     use super::LoudsTrie;
     use trie::key::Key;
     use trie::key::IKey;
 
-    fn build_prop(v: Vec<String>) -> bool {
+    impl qc::Arbitrary for NumTries {
+        fn arbitrary<G: qc::Gen>(g: &mut G) -> NumTries {
+            // This is slow when using the full range...
+            //NumTries::new(g.gen_range(MIN_NUM_TRIES, MAX_NUM_TRIES + 1))
+            NumTries::new(g.gen_range(MIN_NUM_TRIES, 17))
+        }
+        fn shrink(&self) -> Box<Iterator<Item=Self>> {
+            let fewer = self.get() / 2;
+            let fewer = NumTries::new(fewer);
+            if fewer.get() > 0 { qc::single_shrinker(fewer) }
+                else { qc::empty_shrinker() }
+        }
+    }
+
+    fn build_prop(v: Vec<String>, num_tries: NumTries) -> qc::TestResult {
+        if v.iter().any(|x| x.is_empty()) {
+            return qc::TestResult::discard();
+        }
         let mut keys: Vec<Key> = v.iter().map(|s| Key::new(s.as_bytes()))
                                  .collect();
-
-        //let config = Config::new().with_num_tries(NumTries::new(1));
-        let config = Config::new();
+        let config = Config::new().with_num_tries(num_tries);
         let trie = LoudsTrie::build(&mut keys, &config);
+        let mut ids_seen = Vec::new();
         for key in keys {
+            ids_seen.push(key.get_id());
             let s = trie.id_lookup(key.get_id());
             if !s.iter().eq(key.get_slice().iter()) {
-                return false;
+                return qc::TestResult::failed();
             }
         }
-        //for id in 0..trie.len() {
-        //    trie.id_lookup(id);
-        //}
-        true
+        ids_seen.sort();
+        for (&a, b) in ids_seen.iter().zip(0..ids_seen.len()) {
+            if a != b { return qc::TestResult::failed(); }
+        }
+        qc::TestResult::passed()
     }
 
     #[test]
     fn louds_trie_build_qc() {
         let _ = env_logger::init();
-        qc::quickcheck(build_prop as fn(Vec<String>) -> bool);
+        qc::quickcheck(build_prop as fn(Vec<String>, NumTries)
+                       -> qc::TestResult);
     }
 
     #[test]
     fn louds_trie_build_manual() {
         let _ = env_logger::init();
-        assert!(build_prop(vec!["\u{80}".to_string()]));
-        assert!(build_prop(vec!["\u{4b8ca}".to_string(),
-                                "\u{d2c4a}".to_string()]));
+        let n = NumTries::default();
+        assert!(!build_prop(vec!["\u{80}".to_string()], n).is_failure());
+        assert!(!build_prop(vec!["\u{4b8ca}".to_string(),
+                                 "\u{d2c4a}".to_string()], n).is_failure());
     }
 }
 
