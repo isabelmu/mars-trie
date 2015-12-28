@@ -230,6 +230,7 @@ impl BitVec {
 
         // FIXME: looks like Index is returning a value instead of an address..
         //        what am I doing wrong?
+        assert!(i / 512 < self.ranks_.len());
         let rank = self.ranks_[i / 512];
         let mut offset: usize = rank.abs() as usize;
         match (i / 64) % 8 {
@@ -249,7 +250,8 @@ impl BitVec {
 
     #[cfg(target_pointer_width = "64")]
     fn rank1_offset_rest(&self, i: usize) -> usize {
-        (self.units_[i / 64] & (((1u64 << (i % 64) as u64) - 1)) as usize)
+        assert!(i / 64 < self.units_.len());
+        (self.units_[i / 64] & (((1u64.wrapping_shl((i % 64) as u32) as u64) - 1)) as usize)
             .count_ones() as usize
     }
     #[cfg(target_pointer_width = "32")]
@@ -1176,22 +1178,20 @@ mod test {
         qc::quickcheck(prop as fn(BitVec) -> bool);
     }
 
-    #[test]
-    fn test_rank() {
-        let _ = env_logger::init();
-        fn prop(bv: BitVec, i: usize) -> qc::TestResult {
-            if i > bv.size_ { return qc::TestResult::discard(); }
-            if !bv.is_rank_enabled() { return qc::TestResult::discard(); }
-            let nr0 = naive_rank0(&bv, i);
-            let r0 = bv.rank0(i);
-            let nr1 = naive_rank1(&bv, i);
-            let r1 = bv.rank1(i);
-            qc::TestResult::from_bool(nr0 == r0 && nr1 == r1)
-        }
-        qc::quickcheck(prop as fn(BitVec, usize) -> qc::TestResult);
+    fn rank_prop(bv: BitVec, i: usize) -> qc::TestResult {
+        if i >= bv.size_ { return qc::TestResult::discard(); }
+        if !bv.is_rank_enabled() { return qc::TestResult::discard(); }
+        let nr0 = naive_rank0(&bv, i);
+        let r0 = bv.rank0(i);
+        let nr1 = naive_rank1(&bv, i);
+        let r1 = bv.rank1(i);
+        qc::TestResult::from_bool(nr0 == r0 && nr1 == r1)
+    }
 
-        // putting this here to remind me of the failure... 
-        panic!("some part of this SOMETIMES fails with a stack overflow");
+    #[test]
+    fn test_rank_qc() {
+        let _ = env_logger::init();
+        qc::quickcheck(rank_prop as fn(BitVec, usize) -> qc::TestResult);
     }
 
     #[test]
