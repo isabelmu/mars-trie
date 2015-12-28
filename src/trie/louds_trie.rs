@@ -735,5 +735,199 @@ mod test {
         assert!(!build_prop(vec!["\u{4b8ca}".to_string(),
                                  "\u{d2c4a}".to_string()], n).is_failure());
     }
+
+/*
+void TestTextTail() {
+  TEST_START();
+
+  marisa::grimoire::trie::Tail tail;
+  marisa::grimoire::Vector<marisa::grimoire::trie::Entry> entries;
+  marisa::grimoire::Vector<marisa::UInt32> offsets;
+  tail.build(entries, &offsets, MARISA_TEXT_TAIL);
+
+  ASSERT(tail.mode() == MARISA_TEXT_TAIL);
+  ASSERT(tail.size() == 0);
+  ASSERT(tail.empty());
+  ASSERT(tail.total_size() == tail.size());
+  ASSERT(tail.io_size() == (sizeof(marisa::UInt64) * 6));
+
+  ASSERT(offsets.empty());
+
+  marisa::grimoire::trie::Entry entry;
+  entry.set_str("X", 1);
+  entries.push_back(entry);
+
+  tail.build(entries, &offsets, MARISA_TEXT_TAIL);
+
+  ASSERT(tail.mode() == MARISA_TEXT_TAIL);
+  ASSERT(tail.size() == 2);
+  ASSERT(!tail.empty());
+  ASSERT(tail.total_size() == tail.size());
+  ASSERT(tail.io_size() == (sizeof(marisa::UInt64) * 7));
+
+  ASSERT(offsets.size() == entries.size());
+  ASSERT(offsets[0] == 0);
+  ASSERT(tail[offsets[0]] == 'X');
+  ASSERT(tail[offsets[0] + 1] == '\0');
+
+  entries.clear();
+  entry.set_str("abc", 3);
+  entries.push_back(entry);
+  entry.set_str("bc", 2);
+  entries.push_back(entry);
+  entry.set_str("abc", 3);
+  entries.push_back(entry);
+  entry.set_str("c", 1);
+  entries.push_back(entry);
+  entry.set_str("ABC", 3);
+  entries.push_back(entry);
+  entry.set_str("AB", 2);
+  entries.push_back(entry);
+
+  tail.build(entries, &offsets, MARISA_TEXT_TAIL);
+  std::sort(entries.begin(), entries.end(),
+      marisa::grimoire::trie::Entry::IDComparer());
+
+  ASSERT(tail.size() == 11);
+  ASSERT(offsets.size() == entries.size());
+  for (std::size_t i = 0; i < entries.size(); ++i) {
+    const char * const ptr = &tail[offsets[i]];
+    ASSERT(std::strlen(ptr) == entries[i].length());
+    ASSERT(std::strcmp(ptr, entries[i].ptr()) == 0);
+  }
+
+  {
+    marisa::grimoire::Writer writer;
+    writer.open("trie-test.dat");
+    tail.write(writer);
+  }
+
+  tail.clear();
+
+  ASSERT(tail.size() == 0);
+  ASSERT(tail.total_size() == tail.size());
+
+  {
+    marisa::grimoire::Mapper mapper;
+    mapper.open("trie-test.dat");
+    tail.map(mapper);
+
+    ASSERT(tail.mode() == MARISA_TEXT_TAIL);
+    ASSERT(tail.size() == 11);
+    for (std::size_t i = 0; i < entries.size(); ++i) {
+      const char * const ptr = &tail[offsets[i]];
+    ASSERT(std::strlen(ptr) == entries[i].length());
+    ASSERT(std::strcmp(ptr, entries[i].ptr()) == 0);
+    }
+    tail.clear();
+  }
+
+  {
+    marisa::grimoire::Reader reader;
+    reader.open("trie-test.dat");
+    tail.read(reader);
+  }
+
+  ASSERT(tail.size() == 11);
+  ASSERT(offsets.size() == entries.size());
+  for (std::size_t i = 0; i < entries.size(); ++i) {
+    const char * const ptr = &tail[offsets[i]];
+    ASSERT(std::strlen(ptr) == entries[i].length());
+    ASSERT(std::strcmp(ptr, entries[i].ptr()) == 0);
+  }
+
+  {
+    std::stringstream stream;
+    marisa::grimoire::Writer writer;
+    writer.open(stream);
+    tail.write(writer);
+    tail.clear();
+    marisa::grimoire::Reader reader;
+    reader.open(stream);
+    tail.read(reader);
+  }
+
+  ASSERT(tail.size() == 11);
+  ASSERT(offsets.size() == entries.size());
+  for (std::size_t i = 0; i < entries.size(); ++i) {
+    const char * const ptr = &tail[offsets[i]];
+    ASSERT(std::strlen(ptr) == entries[i].length());
+    ASSERT(std::strcmp(ptr, entries[i].ptr()) == 0);
+  }
+
+  TEST_END();
+}
+
+void TestBinaryTail() {
+  TEST_START();
+
+  marisa::grimoire::trie::Tail tail;
+  marisa::grimoire::Vector<marisa::grimoire::trie::Entry> entries;
+  marisa::grimoire::Vector<marisa::UInt32> offsets;
+  tail.build(entries, &offsets, MARISA_BINARY_TAIL);
+
+  ASSERT(tail.mode() == MARISA_TEXT_TAIL);
+  ASSERT(tail.size() == 0);
+  ASSERT(tail.empty());
+  ASSERT(tail.total_size() == tail.size());
+  ASSERT(tail.io_size() == (sizeof(marisa::UInt64) * 6));
+
+  ASSERT(offsets.empty());
+
+  marisa::grimoire::trie::Entry entry;
+  entry.set_str("X", 1);
+  entries.push_back(entry);
+
+  tail.build(entries, &offsets, MARISA_BINARY_TAIL);
+
+  ASSERT(tail.mode() == MARISA_BINARY_TAIL);
+  ASSERT(tail.size() == 1);
+  ASSERT(!tail.empty());
+  ASSERT(tail.total_size() == (tail.size() + sizeof(marisa::UInt64)));
+  ASSERT(tail.io_size() == (sizeof(marisa::UInt64) * 8));
+
+  ASSERT(offsets.size() == entries.size());
+  ASSERT(offsets[0] == 0);
+
+  const char binary_entry[] = { 'N', 'P', '\0', 'T', 'r', 'i', 'e' };
+  entries[0].set_str(binary_entry, sizeof(binary_entry));
+
+  tail.build(entries, &offsets, MARISA_TEXT_TAIL);
+
+  ASSERT(tail.mode() == MARISA_BINARY_TAIL);
+  ASSERT(tail.size() == entries[0].length());
+
+  ASSERT(offsets.size() == entries.size());
+  ASSERT(offsets[0] == 0);
+
+  entries.clear();
+  entry.set_str("abc", 3);
+  entries.push_back(entry);
+  entry.set_str("bc", 2);
+  entries.push_back(entry);
+  entry.set_str("abc", 3);
+  entries.push_back(entry);
+  entry.set_str("c", 1);
+  entries.push_back(entry);
+  entry.set_str("ABC", 3);
+  entries.push_back(entry);
+  entry.set_str("AB", 2);
+  entries.push_back(entry);
+
+  tail.build(entries, &offsets, MARISA_BINARY_TAIL);
+  std::sort(entries.begin(), entries.end(),
+      marisa::grimoire::trie::Entry::IDComparer());
+
+  ASSERT(tail.mode() == MARISA_BINARY_TAIL);
+  ASSERT(tail.size() == 8);
+  ASSERT(offsets.size() == entries.size());
+  for (std::size_t i = 0; i < entries.size(); ++i) {
+    const char * const ptr = &tail[offsets[i]];
+    ASSERT(std::memcmp(ptr, entries[i].ptr(), entries[i].length()) == 0);
+  }
+
+  TEST_END();
+}
+*/
 }
 
