@@ -23,7 +23,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 use std;
-use trie::entry::Entry;
+use entry::Entry;
 
 #[derive(Copy, Clone, Debug)]
 struct Union {

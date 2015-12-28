@@ -25,22 +25,21 @@
 use std;
 use std::collections::VecDeque;
 
+use base::INVALID_LINK_ID;
+use cache::Cache;
 use config::Config;
 use config::CacheLevel;
 use config::NodeOrder;
 use config::TailMode;
-use trie::range::Range;
-use trie::range::WeightedRange;
-use trie::cache::Cache;
-use trie::entry::Entry;
-use trie::key::IKey;
-use trie::key::Key;
-use trie::key::ReverseKey;
-use trie::tail::Tail;
+use entry::Entry;
+use range::Range;
+use range::WeightedRange;
+use key::IKey;
+use key::Key;
+use key::ReverseKey;
+use tail::Tail;
 use vector::bit_vec::BitVec;
 use vector::flat_vec::FlatVec;
-
-use base::INVALID_LINK_ID;
 
 pub const INVALID_EXTRA: u32 = std::u32::MAX >> 8;
 
@@ -676,12 +675,12 @@ void LoudsTrie::write_(Writer &writer) const {
 mod test {
     use env_logger;
     use config::{Config, MAX_NUM_TRIES, MIN_NUM_TRIES, NumTries};
+    use key::Key;
+    use key::IKey;
     use quickcheck as qc;
     use std;
     use std::default::Default;
     use super::LoudsTrie;
-    use trie::key::Key;
-    use trie::key::IKey;
 
     impl qc::Arbitrary for NumTries {
         fn arbitrary<G: qc::Gen>(g: &mut G) -> NumTries {

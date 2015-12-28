@@ -24,8 +24,8 @@
 
 use std;
 use config::TailMode;
-use trie::entry;
-use trie::entry::Entry;
+use entry;
+use entry::Entry;
 use vector::bit_vec::BitVec;
 
 #[derive(Debug)]

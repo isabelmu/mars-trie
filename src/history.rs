@@ -23,11 +23,65 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 use std;
-use super::history::History;
+use base::*;
 
-pub struct IDQuery {
-    
+pub struct History {
+  node_id_: u32,
+  louds_pos_: u32,
+  key_pos_: u32,
+  link_id_: u32,
+  key_id_: u32,
 }
+
+const U32_MAX: usize = std::u32::MAX as usize;
+
+impl History {
+    fn new() -> History {
+        History { node_id_: 0, louds_pos_: 0, key_pos_: 0,
+                  link_id_: INVALID_LINK_ID, key_id_: INVALID_KEY_ID }
+    }
+
+    fn set_node_id(&mut self, node_id: usize) {
+        assert!(node_id <= U32_MAX, "MARISA_SIZE_ERROR");
+        self.node_id_ = node_id as u32;
+    }
+    fn set_louds_pos(&mut self, louds_pos: usize) {
+        assert!(louds_pos <= U32_MAX, "MARISA_SIZE_ERROR");
+        self.louds_pos_ = louds_pos as u32;
+    }
+    fn set_key_pos(&mut self, key_pos: usize) {
+        assert!(key_pos <= U32_MAX, "MARISA_SIZE_ERROR");
+        self.key_pos_ = key_pos as u32;
+    }
+    fn set_link_id(&mut self, link_id: usize) {
+        assert!(link_id <= U32_MAX, "MARISA_SIZE_ERROR");
+        self.link_id_ = link_id as u32;
+    }
+    fn set_key_id(&mut self, key_id: usize) {
+        assert!(key_id <= U32_MAX, "MARISA_SIZE_ERROR");
+        self.key_id_ = key_id as u32;
+    }
+  
+    fn node_id(&self) -> usize {
+        self.node_id_ as usize
+    }
+    fn louds_pos(&self) -> usize {
+        self.louds_pos_ as usize
+    }
+    fn key_pos(&self) -> usize {
+        self.key_pos_ as usize
+    }
+    fn link_id(&self) -> usize {
+        self.link_id_ as usize
+    }
+    fn key_id(&self) -> usize {
+        self.key_id_ as usize
+    }
+}
+
+//pub struct IDQuery {
+//    
+//}
 
 // A search agent has its internal state and the status codes are defined
 // below.
