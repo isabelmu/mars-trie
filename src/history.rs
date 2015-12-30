@@ -91,26 +91,5 @@ impl State {
     fn reset(&mut self) {
         *self = State::new();
     }
-
-/*
-    fn lookup_init(&mut self) {
-        self.node_id_ = 0;
-        self.query_pos_ = 0;
-    }
-    fn reverse_lookup_init(&mut self) {
-        self.key_buf_ = Vec::with_capacity(32);
-    }
-    fn common_prefix_search_init(&mut self) {
-        self.node_id_ = 0;
-        self.query_pos_ = 0;
-    }
-    fn predictive_search_init(&mut self) {
-        self.key_buf_ = Vec::with_capacity(64);
-        self.history_ = Vec::with_capacity(4);
-        self.node_id_ = 0;
-        self.query_pos_ = 0;
-        self.history_pos_ = 0;
-    }
-*/
 }
 
