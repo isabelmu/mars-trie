@@ -1,7 +1,7 @@
 use std;
 use base::*;
 
-struct History {
+pub struct History {
     node_id_: u32,
     louds_pos_: u32,
     key_pos_: u32,

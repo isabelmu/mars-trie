@@ -17,6 +17,8 @@ use tail::Tail;
 use vector::bit_vec::BitVec;
 use vector::flat_vec::FlatVec;
 
+pub mod nav;
+
 pub const INVALID_EXTRA: u32 = std::u32::MAX >> 8;
 
 /// Recursive LOUDS trie

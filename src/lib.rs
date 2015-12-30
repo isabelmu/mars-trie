@@ -15,7 +15,6 @@ mod header;
 mod history;
 mod key;
 mod louds_trie;
-mod nav;
 mod range;
 mod tail;
 
