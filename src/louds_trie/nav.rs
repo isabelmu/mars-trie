@@ -1,7 +1,7 @@
 use std;
 use base::*;
 
-pub struct History {
+struct History {
     node_id_: u32,
     louds_pos_: u32,
     key_pos_: u32,
@@ -51,7 +51,7 @@ impl History {
     }
 }
 
-pub struct State {
+struct State {
     key_buf_: Vec<u8>,
     history_: Vec<History>,
     node_id_: u32,
@@ -60,7 +60,7 @@ pub struct State {
 }
 
 impl State {
-    pub fn new() -> State {
+    fn new() -> State {
         State { key_buf_: Vec::new(), history_: Vec::new(), node_id_: 0,
                 query_pos_: 0, history_pos_: 0, }
     }
@@ -93,37 +93,38 @@ impl State {
     }
 }
 
-struct Nav {
+pub struct Nav {
     state_: State
 }
 
 impl Nav {
-    fn has_child(&self) -> bool {
+    pub fn has_child(&self) -> bool {
         panic!("not implemented")
     }
-    fn go_to_child(&mut self) -> bool {
+    pub fn go_to_child(&mut self) -> bool {
         panic!("not implemented")
     }
-    fn has_sibling(&self) -> bool {
+    pub fn has_sibling(&self) -> bool {
         panic!("not implemented")
     }
-    fn go_to_sibling(&mut self) -> bool {
+    pub fn go_to_sibling(&mut self) -> bool {
         panic!("not implemented")
     }
-    fn has_parent(&self) -> bool {
+    pub fn has_parent(&self) -> bool {
         panic!("not implemented")
     }
-    fn go_to_parent(&self) -> bool {
+    pub fn go_to_parent(&self) -> bool {
         panic!("not implemented")
     }
-    fn is_terminal(&self) -> bool {
+    pub fn is_terminal(&self) -> bool {
         panic!("not implemented")
     }
-    fn get_string(&self) -> &str {
+    pub fn get_string(&self) -> &str {
         panic!("not implemented")
     }
-    fn is_end(&self) -> bool {
+    pub fn is_end(&self) -> bool {
         panic!("not implemented")
     }
+
 }
 

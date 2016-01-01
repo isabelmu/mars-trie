@@ -15,7 +15,6 @@ mod header;
 mod key;
 mod louds_trie;
 mod range;
-mod tail;
 
 #[cfg(test)]
 extern crate env_logger;

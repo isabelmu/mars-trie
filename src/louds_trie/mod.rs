@@ -13,11 +13,12 @@ use range::WeightedRange;
 use key::IKey;
 use key::Key;
 use key::ReverseKey;
-use tail::Tail;
+use louds_trie::tail::Tail;
 use vector::bit_vec::BitVec;
 use vector::flat_vec::FlatVec;
 
 pub mod nav;
+mod tail;
 
 pub const INVALID_EXTRA: u32 = std::u32::MAX >> 8;
 
