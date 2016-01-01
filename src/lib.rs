@@ -12,7 +12,6 @@ mod vector;
 mod cache;
 mod entry;
 mod header;
-mod history;
 mod key;
 mod louds_trie;
 mod range;
