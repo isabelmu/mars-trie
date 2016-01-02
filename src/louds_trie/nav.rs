@@ -1,5 +1,6 @@
 use std;
 use base::*;
+use super::LoudsTrie;
 
 struct History {
     node_id_: u32,
@@ -85,8 +86,9 @@ impl State {
     }
 }
 
-pub struct Nav {
-    state_: State
+pub struct Nav<'a> {
+    state_: State,
+    trie_: &'a LoudsTrie,
 }
 
 /// The LOUDS (level-order unary degree sequence) representation of a tree
@@ -101,21 +103,21 @@ pub struct Nav {
 ///
 /// Example (from Jacobson):
 ///
-///  Tree:             With degrees
+///  Tree:              With degrees:
 ///
-///                         10  <-- super-root
-///                         |
-///                         |
-///        o               1110
-///       /|\              /|\  
-///      / | \            / | \
-///     o  o  o        110  0  10
-///    / \     \        / \     \       
-///   /   \     \      /   \     \     
-///  o     o     o    10   10     0
-///  |     |          |     |      
-///  |     |          |     |     
-///  o     o          0     0
+///                           10  <-- super-root
+///                           |
+///                           |
+///        o                 1110
+///       /|\                /|\  
+///      / | \              / | \
+///     o  o  o          110  0  10
+///    / \     \          / \     \       
+///   /   \     \        /   \     \     
+///  o     o     o      10   10     0
+///  |     |            |     |      
+///  |     |            |     |     
+///  o     o            0     0
 ///
 ///  Degree bit sequences, concatenated in level order:
 ///
@@ -127,8 +129,26 @@ pub struct Nav {
 /// first_child(m) == select0(rank1(m)) + 1
 /// next_sibling(m) == m + 1
 /// parent(m) == select1(rank0(m))
+///
+/// In marisa-trie terminology, "node_id" is the index of the node in level
+/// order. This is equal to rank1(m). So the traversal operations become:
+///
+/// ???
+///
+/// first_child_m(node_id) == select0(node_id) + 1
+/// first_child_node_id(node_id) == first_child_m(node_id) - node_id - 1
+///     (because node_id - 1 is the # of 0s)
+///
+// FIXME: What does 'node_id' in marisa-trie correspond to? rank1(m)?
+//
+// 'louds_' holds the tree structure
+//
 
-impl Nav {
+impl Nav<'a> {
+    pub fn new<'a>(trie: &'a LoudsTrie) -> Nav<'a> {
+        Nav { state_: State::new(), trie_: trie }
+    }
+
     pub fn has_child(&self) -> bool {
         panic!("not implemented")
     }
@@ -137,11 +157,13 @@ impl Nav {
         // We can't do that here. May want to remove or rethink the cache
         // implementation in light of this.
 
-        let louds_pos = 
+        let louds = &self.trie_.louds_;
+        let state = &mut self.state_;
 
-        std::size_t louds_pos = louds_.select0(state.node_id()) + 1;
-        if (!louds_[louds_pos]) {
-          return false;
+        let louds_pos = louds.select0(state.node_id()) + 1;
+        if !louds[louds_pos] {
+            // No child
+            return false;
         }
         state.set_node_id(louds_pos - state.node_id() - 1);
         std::size_t link_id = MARISA_INVALID_LINK_ID;
