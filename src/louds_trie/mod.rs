@@ -22,14 +22,84 @@ mod tail;
 
 pub const INVALID_EXTRA: u32 = std::u32::MAX >> 8;
 
+struct LoudsPos(u32);
+struct NodeID(u32);
+
 /// Recursive LOUDS trie
+///
+/// The LOUDS (level-order unary degree sequence) representation of a tree
+/// structure is as follows. A node's children are represented as one '1'
+/// bit per child, followed by a '0'. So three children is '1110', and no
+/// children is just '0'. These bit strings are packed together in level
+/// order (breadth-first order).
+///
+/// The tree structure starts with a 'super-root' that is always present,
+/// but otherwise ignored. The super-root is always '10', indicating that
+/// there is a root node below.
+///
+/// Example (from Jacobson):
+///
+///  Tree:              With degrees:
+///
+///                           10  <-- super-root
+///                           |
+///                           |
+///        o                 1110
+///       /|\                /|\  
+///      / | \              / | \
+///     o  o  o          110  0  10
+///    / \     \          / \     \       
+///   /   \     \        /   \     \     
+///  o     o     o      10   10     0
+///  |     |            |     |      
+///  |     |            |     |     
+///  o     o            0     0
+///
+///  Degree bit sequences, concatenated in level order:
+///
+///  10 1110 110 0 10 10 10 0 0 0
+///
+/// Nodes are represented by the index of their corresponding '1' bit.
+/// Traversal operations are as follows:
+///
+/// first_child(m) == select0(rank1(m)) + 1
+/// next_sibling(m) == m + 1
+/// parent(m) == select1(rank0(m))
+///
+/// In marisa-trie terminology, "node_id" is the index of the node in level
+/// order. This is equal to rank1(m). So the traversal operations become:
+///
+/// first_child_m(node_id) == select0(node_id) + 1
+/// first_child_node_id(node_id) == first_child_m(node_id) - (node_id + 1)
+///     Because node_id + 1 is the # of 0s ahead of m, and we're looking for
+///     the # of 1s.
+///     Note that we first need to check whether the bit at
+///     'first_child_m(node_id)' is set.
+/// next_sibling_node_id(node_id) == node_id + 1
+///     (but we need to check whether m + 1
+///
+/// 'louds_pos' variables refer to bit indexes in 'louds_'
+///
 #[derive(Debug)]
 pub struct LoudsTrie {
+    /// The tree structure
     louds_: BitVec,
+
+    /// Bit vector of terminal-ness per node id. Indexed by node. Can be used to
+    /// retrieve NodeID from user-facing word ID:
+    ///
+    ///     let node_id = self.terminal_flags_.select1(id);
+    ///
     terminal_flags_: BitVec,
+
+    /// Per node, does this node have a link to another trie? Indexed by node.
     link_flags_: BitVec,
+
+    /// Base characters, limited to one per node. Indexed by node.
     bases_: Vec<u8>,
     extras_: FlatVec,
+
+    /// Tail strings, accessed by link ID.
     tail_: Tail,
     next_trie_: Option<Box<LoudsTrie> >,
     cache_: Vec<Cache>,
@@ -101,6 +171,19 @@ impl LoudsTrie {
 
     pub fn clear(&mut self) {
         *self = LoudsTrie::new();
+    }
+
+    pub fn has_child(&self, node_id: NodeID) -> bool {
+        self.child_pos(node_id).is_some()
+    }
+    pub fn child_pos(&self, node_id: NodeID) -> Option<(NodeID, LoudsPos)> {
+        let child_louds_pos = self.trie_.louds_.select0(node_id) + 1;
+        if self.trie_.louds_.at(louds_pos) {
+            let child_node_id = child_louds_pos - node_id - 1;
+            Some((NodeID(child_node_id), LoudsPos(child_louds_pos)))
+        } else {
+            None
+        }
     }
 
     pub fn build<'a>(keys: &mut Vec<Key<'a> >, config: &Config) -> LoudsTrie {

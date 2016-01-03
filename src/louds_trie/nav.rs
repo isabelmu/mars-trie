@@ -56,7 +56,6 @@ struct State {
     key_buf_: Vec<u8>,
     history_: Vec<History>,
     node_id_: u32,
-    history_pos_: u32,
 }
 
 impl State {
@@ -69,18 +68,9 @@ impl State {
         assert!(node_id <= std::u32::MAX as usize, "MARISA_SIZE_ERROR");
         self.node_id_ = node_id as u32;
     }
-    fn set_history_pos(&mut self, history_pos: usize) {
-        assert!(history_pos <= std::u32::MAX as usize, "MARISA_SIZE_ERROR");
-        self.history_pos_ = history_pos as u32;
-    }
-
     fn get_node_id(&self) -> usize {
         self.node_id_ as usize
     }
-    fn get_history_pos(&self) -> usize {
-        self.history_pos_ as usize
-    }
-
     fn reset(&mut self) {
         *self = State::new();
     }
@@ -91,105 +81,52 @@ pub struct Nav<'a> {
     trie_: &'a LoudsTrie,
 }
 
-/// The LOUDS (level-order unary degree sequence) representation of a tree
-/// structure is as follows. A node's children are represented as one '1'
-/// bit per child, followed by a '0'. So three children is '1110', and no
-/// children is just '0'. These bit strings are packed together in level
-/// order (breadth-first order).
-///
-/// The tree structure starts with a 'super-root' that is always present,
-/// but otherwise ignored. The super-root is always '10', indicating that
-/// there is a root node below.
-///
-/// Example (from Jacobson):
-///
-///  Tree:              With degrees:
-///
-///                           10  <-- super-root
-///                           |
-///                           |
-///        o                 1110
-///       /|\                /|\  
-///      / | \              / | \
-///     o  o  o          110  0  10
-///    / \     \          / \     \       
-///   /   \     \        /   \     \     
-///  o     o     o      10   10     0
-///  |     |            |     |      
-///  |     |            |     |     
-///  o     o            0     0
-///
-///  Degree bit sequences, concatenated in level order:
-///
-///  10 1110 110 0 10 10 10 0 0 0
-///
-/// Nodes are represented by the index of their corresponding '1' bit.
-/// Traversal operations are as follows:
-///
-/// first_child(m) == select0(rank1(m)) + 1
-/// next_sibling(m) == m + 1
-/// parent(m) == select1(rank0(m))
-///
-/// In marisa-trie terminology, "node_id" is the index of the node in level
-/// order. This is equal to rank1(m). So the traversal operations become:
-///
-/// first_child_m(node_id) == select0(node_id) + 1
-/// first_child_node_id(node_id) == first_child_m(node_id) - (node_id + 1)
-///     Because node_id + 1 is the # of 0s ahead of m, and we're looking for
-///     the # of 1s.
-///     Note that we first need to check whether the bit at
-///     'first_child_m(node_id)' is set.
-/// next_sibling_node_id(node_id) == node_id + 1
-///     (but we need to check whether m + 1
-///
-/// 'louds_' holds the tree structure
-/// 'louds_pos' variables refer to bit indexes in 'louds_'
-///
+//struct LoudsPos(u32);
+//struct NodeID(u32);
 
 impl Nav<'a> {
     pub fn new<'a>(trie: &'a LoudsTrie) -> Nav<'a> {
         Nav { state_: State::new(), trie_: trie }
     }
 
-    pub fn has_child(&self) -> bool {
-        panic!("not implemented")
-    }
+    //pub fn has_child(&self) -> bool {
+    //fn child_pos(&self) -> Option<(NodeID, LoudsPos)> {
     pub fn go_to_child(&mut self) -> bool {
         // For lookups, marisa does caching based on the input character.
         // We can't do that here. May want to remove or rethink the cache
         // implementation in light of this.
 
-        let louds = &self.trie_.louds_;
-        let state = &mut self.state_;
-        let link_flags = &self.trie_.link_flags_;
+        //let louds = &self.trie_.louds_;
+        //let state = &mut self.state_;
+        //let link_flags = &self.trie_.link_flags_;
 
-        let louds_pos = louds.select0(state.get_node_id()) + 1;
-        if !louds[louds_pos] {
-            // No child
-            return false;
+        if let Some((node_id, louds_pos))
+        = self.trie_.child_pos(self.state_.get_node_id()) {
+    
+            let mut link_id = INVALID_LINK_ID;
+            do {
+                if link_flags[state.node_id()] {
+                    //link_id = update_link_id(link_id, state.node_id());
+    
+                    //const std::size_t prev_query_pos = state.query_pos();
+                    //if (match(agent, get_link(state.node_id(), link_id))) {
+                    //  return true;
+                    //} else if (state.query_pos() != prev_query_pos) {
+                    //  return false;
+                    //}
+                } else if (bases_[state.node_id()] ==
+                    (UInt8)agent.query()[state.query_pos()]) {
+                    state.set_query_pos(state.query_pos() + 1);
+                    return true;
+                }
+                state.set_node_id(state.node_id() + 1);
+                ++louds_pos;
+            } while (louds_[louds_pos]);
+            false
+
+        } else {
+            false
         }
-        state.set_node_id(louds_pos - state.get_node_id() - 1);
-        let mut link_id = INVALID_LINK_ID;
-        do {
-            if link_flags[state.node_id()] {
-                //link_id = update_link_id(link_id, state.node_id());
-
-                //const std::size_t prev_query_pos = state.query_pos();
-                //if (match(agent, get_link(state.node_id(), link_id))) {
-                //  return true;
-                //} else if (state.query_pos() != prev_query_pos) {
-                //  return false;
-                //}
-            } else if (bases_[state.node_id()] ==
-                (UInt8)agent.query()[state.query_pos()]) {
-                state.set_query_pos(state.query_pos() + 1);
-                return true;
-            }
-            state.set_node_id(state.node_id() + 1);
-            ++louds_pos;
-        } while (louds_[louds_pos]);
-        return false;
-
     }
     pub fn has_sibling(&self) -> bool {
         panic!("not implemented")
