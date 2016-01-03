@@ -133,16 +133,18 @@ pub struct Nav<'a> {
 /// In marisa-trie terminology, "node_id" is the index of the node in level
 /// order. This is equal to rank1(m). So the traversal operations become:
 ///
-/// ???
-///
 /// first_child_m(node_id) == select0(node_id) + 1
-/// first_child_node_id(node_id) == first_child_m(node_id) - node_id - 1
-///     (because node_id - 1 is the # of 0s)
+/// first_child_node_id(node_id) == first_child_m(node_id) - (node_id + 1)
+///     Because node_id + 1 is the # of 0s ahead of m, and we're looking for
+///     the # of 1s.
+///     Note that we first need to check whether the bit at
+///     'first_child_m(node_id)' is set.
+/// next_sibling_node_id(node_id) == node_id + 1
+///     (but we need to check whether m + 1
 ///
-// FIXME: What does 'node_id' in marisa-trie correspond to? rank1(m)?
-//
-// 'louds_' holds the tree structure
-//
+/// 'louds_' holds the tree structure
+/// 'louds_pos' variables refer to bit indexes in 'louds_'
+///
 
 impl Nav<'a> {
     pub fn new<'a>(trie: &'a LoudsTrie) -> Nav<'a> {
@@ -159,30 +161,32 @@ impl Nav<'a> {
 
         let louds = &self.trie_.louds_;
         let state = &mut self.state_;
+        let link_flags = &self.trie_.link_flags_;
 
-        let louds_pos = louds.select0(state.node_id()) + 1;
+        let louds_pos = louds.select0(state.get_node_id()) + 1;
         if !louds[louds_pos] {
             // No child
             return false;
         }
-        state.set_node_id(louds_pos - state.node_id() - 1);
-        std::size_t link_id = MARISA_INVALID_LINK_ID;
+        state.set_node_id(louds_pos - state.get_node_id() - 1);
+        let mut link_id = INVALID_LINK_ID;
         do {
-          if (link_flags_[state.node_id()]) {
-            link_id = update_link_id(link_id, state.node_id());
-            const std::size_t prev_query_pos = state.query_pos();
-            if (match(agent, get_link(state.node_id(), link_id))) {
-              return true;
-            } else if (state.query_pos() != prev_query_pos) {
-              return false;
+            if link_flags[state.node_id()] {
+                //link_id = update_link_id(link_id, state.node_id());
+
+                //const std::size_t prev_query_pos = state.query_pos();
+                //if (match(agent, get_link(state.node_id(), link_id))) {
+                //  return true;
+                //} else if (state.query_pos() != prev_query_pos) {
+                //  return false;
+                //}
+            } else if (bases_[state.node_id()] ==
+                (UInt8)agent.query()[state.query_pos()]) {
+                state.set_query_pos(state.query_pos() + 1);
+                return true;
             }
-          } else if (bases_[state.node_id()] ==
-              (UInt8)agent.query()[state.query_pos()]) {
-            state.set_query_pos(state.query_pos() + 1);
-            return true;
-          }
-          state.set_node_id(state.node_id() + 1);
-          ++louds_pos;
+            state.set_node_id(state.node_id() + 1);
+            ++louds_pos;
         } while (louds_[louds_pos]);
         return false;
 
