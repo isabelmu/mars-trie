@@ -1,97 +1,9 @@
 use std;
 use base::*;
-use super::LoudsTrie;
-use super::NodeID;
-use super::LoudsPos;
-
-/*
-struct History {
-    node_id_: u32,
-    louds_pos_: u32,
-    key_pos_: u32,
-    link_id_: u32,
-    key_id_: u32,
-}
-
-impl History {
-    fn new() -> History {
-        History { node_id_: 0, louds_pos_: 0, key_pos_: 0,
-                  link_id_: INVALID_LINK_ID, key_id_: INVALID_KEY_ID }
-    }
-    fn set_node_id(&mut self, node_id: usize) {
-        assert!(node_id <= std::u32::MAX as usize, "MARISA_SIZE_ERROR");
-        self.node_id_ = node_id as u32;
-    }
-    fn set_louds_pos(&mut self, louds_pos: usize) {
-        assert!(louds_pos <= std::u32::MAX as usize, "MARISA_SIZE_ERROR");
-        self.louds_pos_ = louds_pos as u32;
-    }
-    fn set_key_pos(&mut self, key_pos: usize) {
-        assert!(key_pos <= std::u32::MAX as usize, "MARISA_SIZE_ERROR");
-        self.key_pos_ = key_pos as u32;
-    }
-    fn set_link_id(&mut self, link_id: usize) {
-        assert!(link_id <= std::u32::MAX as usize, "MARISA_SIZE_ERROR");
-        self.link_id_ = link_id as u32;
-    }
-    fn set_key_id(&mut self, key_id: usize) {
-        assert!(key_id <= std::u32::MAX as usize, "MARISA_SIZE_ERROR");
-        self.key_id_ = key_id as u32;
-    }
-    fn node_id(&self) -> usize {
-        self.node_id_ as usize
-    }
-    fn louds_pos(&self) -> usize {
-        self.louds_pos_ as usize
-    }
-    fn key_pos(&self) -> usize {
-        self.key_pos_ as usize
-    }
-    fn link_id(&self) -> usize {
-        self.link_id_ as usize
-    }
-    fn key_id(&self) -> usize {
-        self.key_id_ as usize
-    }
-}
-
-struct State {
-    key_buf_: Vec<u8>,
-    history_: Vec<History>,
-    node_id_: u32,
-}
-
-impl State {
-    fn new() -> State {
-        State { key_buf_: Vec::new(), history_: Vec::new(), node_id_: 0,
-                query_pos_: 0, history_pos_: 0, }
-    }
-
-    fn push(&mut self, node_id: NodeID, louds_pos: LoudsPos, key_pos: u32,
-            link_id: u32,
-    node_id_: u32,
-    louds_pos_: u32,
-    key_pos_: u32,
-    link_id_: u32,
-    key_id_: u32,
-}
-
-
-    fn set_node_id(&mut self, node_id: usize) {
-        assert!(node_id <= std::u32::MAX as usize, "MARISA_SIZE_ERROR");
-        self.node_id_ = node_id as u32;
-    }
-    fn get_node_id(&self) -> usize {
-        self.node_id_ as usize
-    }
-    fn reset(&mut self) {
-        *self = State::new();
-    }
-}
-*/
+use super::{LoudsTrie, NodeID, LoudsPos, LinkID};
 
 struct History<'a> {
-    trie_: &'a LoudsTrie
+    trie_: &'a LoudsTrie,
     node_id_: NodeID,
     louds_pos_: LoudsPos,
     link_id_: LinkID,
@@ -108,7 +20,7 @@ impl<'a> History<'a> {
 }
 
 struct State<'a> {
-    history_: Vec<History>,
+    history_: Vec<History<'a> >,
     key_buf_: Vec<u8>,
 }
 
@@ -117,27 +29,33 @@ impl<'a> State<'a> {
         State { history_: Vec::new(), key_buf_: Vec::new() }
     }
 
-    fn push<'b>(&'mut self, key: &'b[u8], trie: &'a LoudsTrie, node_id: NodeID,
+    fn push<'b>(&mut self, key: &'b[u8], trie: &'a LoudsTrie, node_id: NodeID,
                 louds_pos: LoudsPos, link_id: LinkID, key_pos: u32) {
-
-        self.history_.push_back(
-        
-
+        self.key_buf_.extend(key);
+        self.history_.push(History::new(trie, node_id, louds_pos, link_id,
+                                        key_pos));
     }
 
-    fn pop(&'mut self) -> History<'a>
+    fn get_key(&self) -> &[u8] {
+        &self.key_buf_[..]
+    }
+
+    fn pop(&mut self) -> Option<History<'a> > {
+        self.history_.pop()
+    }
+
+    fn get_node_id(&self) -> NodeID {
+        self.history_.last().unwrap().node_id_
+    }
 }
 
 pub struct Nav<'a> {
-    state_: State,
+    state_: State<'a>,
     trie_: &'a LoudsTrie,
 }
 
-//struct LoudsPos(u32);
-//struct NodeID(u32);
-
-impl Nav<'a> {
-    pub fn new<'a>(trie: &'a LoudsTrie) -> Nav<'a> {
+impl<'a> Nav<'a> {
+    pub fn new(trie: &'a LoudsTrie) -> Nav<'a> {
         Nav { state_: State::new(), trie_: trie }
     }
 
@@ -155,6 +73,7 @@ impl Nav<'a> {
         if let Some((node_id, louds_pos))
         = self.trie_.child_pos(self.state_.get_node_id()) {
     
+            /*
             let mut link_id = INVALID_LINK_ID;
             do {
                 if link_flags[state.node_id()] {
@@ -176,94 +95,7 @@ impl Nav<'a> {
                 state.set_node_id(state.node_id() + 1);
                 ++louds_pos;
             } while (louds_[louds_pos]);
-            false
-
-        } else {
-            false
-        }
-    }
-    pub fn has_sibling(&self) -> bool {
-        panic!("not implemented")
-    }
-    pub fn go_to_sibling(&mut self) -> bool {
-        panic!("not implemented")
-    }
-    pub fn has_parent(&self) -> bool {
-        panic!("not implemented")
-    }
-    pub fn go_to_parent(&self) -> bool {
-    }
-}
-
-struct State<'a> {
-    history_: Vec<History>,
-    key_buf_: Vec<u8>,
-}
-
-impl<'a> State<'a> {
-    fn new() -> State<'a> {
-        State { history_: Vec::new(), key_buf_: Vec::new() }
-    }
-
-    fn push<'b>(&'mut self, key: &'b[u8], trie: &'a LoudsTrie, node_id: NodeID,
-                louds_pos: LoudsPos, link_id: LinkID, key_pos: u32) {
-
-        self.history_.push_back(
-        
-
-    }
-
-    fn pop(&'mut self) -> History<'a>
-}
-
-pub struct Nav<'a> {
-    state_: State,
-    trie_: &'a LoudsTrie,
-}
-
-//struct LoudsPos(u32);
-//struct NodeID(u32);
-
-impl Nav<'a> {
-    pub fn new<'a>(trie: &'a LoudsTrie) -> Nav<'a> {
-        Nav { state_: State::new(), trie_: trie }
-    }
-
-    //pub fn has_child(&self) -> bool {
-    //fn child_pos(&self) -> Option<(NodeID, LoudsPos)> {
-    pub fn go_to_child(&mut self) -> bool {
-        // For lookups, marisa does caching based on the input character.
-        // We can't do that here. May want to remove or rethink the cache
-        // implementation in light of this.
-
-        //let louds = &self.trie_.louds_;
-        //let state = &mut self.state_;
-        //let link_flags = &self.trie_.link_flags_;
-
-        if let Some((node_id, louds_pos))
-        = self.trie_.child_pos(self.state_.get_node_id()) {
-    
-            let mut link_id = INVALID_LINK_ID;
-            do {
-                if link_flags[state.node_id()] {
-                    //link_id = update_link_id(link_id, state.node_id());
-    
-                    //const std::size_t prev_query_pos = state.query_pos();
-                    //if (match(agent, get_link(state.node_id(), link_id))) {
-                    //  return true;
-                    //} else if (state.query_pos() != prev_query_pos) {
-                    //  return false;
-                    //}
-                } else {
-                    // Character for node 
-                    bases_[state.node_id()]
-
-                    state.set_query_pos(state.query_pos() + 1);
-                    return true;
-                }
-                state.set_node_id(state.node_id() + 1);
-                ++louds_pos;
-            } while (louds_[louds_pos]);
+            */
             false
 
         } else {

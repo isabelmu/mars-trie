@@ -22,8 +22,13 @@ mod tail;
 
 pub const INVALID_EXTRA: u32 = std::u32::MAX >> 8;
 
+#[derive(Clone, Copy, Debug)]
 struct LoudsPos(u32);
+
+#[derive(Clone, Copy, Debug)]
 struct NodeID(u32);
+
+#[derive(Clone, Copy, Debug)]
 struct LinkID(u32);
 
 /// Recursive LOUDS trie
@@ -179,10 +184,13 @@ impl LoudsTrie {
         self.child_pos(node_id).is_some()
     }
     pub fn child_pos(&self, node_id: NodeID) -> Option<(NodeID, LoudsPos)> {
-        let child_louds_pos = self.trie_.louds_.select0(node_id) + 1;
-        if self.trie_.louds_.at(louds_pos) {
-            let child_node_id = child_louds_pos - node_id - 1;
-            Some((NodeID(child_node_id), LoudsPos(child_louds_pos)))
+        let child_louds_pos = self.louds_.select0(node_id.0 as usize) + 1;
+        if self.louds_.at(child_louds_pos) {
+            let child_node_id = child_louds_pos - node_id.0 as usize - 1;
+            assert!(child_node_id <= std::u32::MAX as usize);
+            assert!(child_louds_pos <= std::u32::MAX as usize);
+            Some((NodeID(child_node_id as u32),
+                  LoudsPos(child_louds_pos as u32)))
         } else {
             None
         }
