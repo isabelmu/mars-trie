@@ -24,6 +24,7 @@ pub const INVALID_EXTRA: u32 = std::u32::MAX >> 8;
 
 struct LoudsPos(u32);
 struct NodeID(u32);
+struct LinkID(u32);
 
 /// Recursive LOUDS trie
 ///
@@ -95,7 +96,8 @@ pub struct LoudsTrie {
     /// Per node, does this node have a link to another trie? Indexed by node.
     link_flags_: BitVec,
 
-    /// Base characters, limited to one per node. Indexed by node.
+    /// Base characters, limited to one per node. Indexed by node. Present if
+    /// link_flags_[node_id] is false.
     bases_: Vec<u8>,
     extras_: FlatVec,
 

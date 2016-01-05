@@ -1,7 +1,10 @@
 use std;
 use base::*;
 use super::LoudsTrie;
+use super::NodeID;
+use super::LoudsPos;
 
+/*
 struct History {
     node_id_: u32,
     louds_pos_: u32,
@@ -64,6 +67,16 @@ impl State {
                 query_pos_: 0, history_pos_: 0, }
     }
 
+    fn push(&mut self, node_id: NodeID, louds_pos: LoudsPos, key_pos: u32,
+            link_id: u32,
+    node_id_: u32,
+    louds_pos_: u32,
+    key_pos_: u32,
+    link_id_: u32,
+    key_id_: u32,
+}
+
+
     fn set_node_id(&mut self, node_id: usize) {
         assert!(node_id <= std::u32::MAX as usize, "MARISA_SIZE_ERROR");
         self.node_id_ = node_id as u32;
@@ -74,6 +87,45 @@ impl State {
     fn reset(&mut self) {
         *self = State::new();
     }
+}
+*/
+
+struct History<'a> {
+    trie_: &'a LoudsTrie
+    node_id_: NodeID,
+    louds_pos_: LoudsPos,
+    link_id_: LinkID,
+    key_pos_: u32,
+    //key_id_: u32,
+}
+
+impl<'a> History<'a> {
+    fn new(trie: &'a LoudsTrie, node_id: NodeID, louds_pos: LoudsPos,
+           link_id: LinkID, key_pos: u32) -> History<'a> {
+        History { trie_: trie, node_id_: node_id, louds_pos_: louds_pos,
+                  link_id_: link_id, key_pos_: key_pos }
+    }
+}
+
+struct State<'a> {
+    history_: Vec<History>,
+    key_buf_: Vec<u8>,
+}
+
+impl<'a> State<'a> {
+    fn new() -> State<'a> {
+        State { history_: Vec::new(), key_buf_: Vec::new() }
+    }
+
+    fn push<'b>(&'mut self, key: &'b[u8], trie: &'a LoudsTrie, node_id: NodeID,
+                louds_pos: LoudsPos, link_id: LinkID, key_pos: u32) {
+
+        self.history_.push_back(
+        
+
+    }
+
+    fn pop(&'mut self) -> History<'a>
 }
 
 pub struct Nav<'a> {
@@ -114,8 +166,98 @@ impl Nav<'a> {
                     //} else if (state.query_pos() != prev_query_pos) {
                     //  return false;
                     //}
-                } else if (bases_[state.node_id()] ==
-                    (UInt8)agent.query()[state.query_pos()]) {
+                } else {
+                    // Character for node 
+                    bases_[state.node_id()]
+
+                    state.set_query_pos(state.query_pos() + 1);
+                    return true;
+                }
+                state.set_node_id(state.node_id() + 1);
+                ++louds_pos;
+            } while (louds_[louds_pos]);
+            false
+
+        } else {
+            false
+        }
+    }
+    pub fn has_sibling(&self) -> bool {
+        panic!("not implemented")
+    }
+    pub fn go_to_sibling(&mut self) -> bool {
+        panic!("not implemented")
+    }
+    pub fn has_parent(&self) -> bool {
+        panic!("not implemented")
+    }
+    pub fn go_to_parent(&self) -> bool {
+    }
+}
+
+struct State<'a> {
+    history_: Vec<History>,
+    key_buf_: Vec<u8>,
+}
+
+impl<'a> State<'a> {
+    fn new() -> State<'a> {
+        State { history_: Vec::new(), key_buf_: Vec::new() }
+    }
+
+    fn push<'b>(&'mut self, key: &'b[u8], trie: &'a LoudsTrie, node_id: NodeID,
+                louds_pos: LoudsPos, link_id: LinkID, key_pos: u32) {
+
+        self.history_.push_back(
+        
+
+    }
+
+    fn pop(&'mut self) -> History<'a>
+}
+
+pub struct Nav<'a> {
+    state_: State,
+    trie_: &'a LoudsTrie,
+}
+
+//struct LoudsPos(u32);
+//struct NodeID(u32);
+
+impl Nav<'a> {
+    pub fn new<'a>(trie: &'a LoudsTrie) -> Nav<'a> {
+        Nav { state_: State::new(), trie_: trie }
+    }
+
+    //pub fn has_child(&self) -> bool {
+    //fn child_pos(&self) -> Option<(NodeID, LoudsPos)> {
+    pub fn go_to_child(&mut self) -> bool {
+        // For lookups, marisa does caching based on the input character.
+        // We can't do that here. May want to remove or rethink the cache
+        // implementation in light of this.
+
+        //let louds = &self.trie_.louds_;
+        //let state = &mut self.state_;
+        //let link_flags = &self.trie_.link_flags_;
+
+        if let Some((node_id, louds_pos))
+        = self.trie_.child_pos(self.state_.get_node_id()) {
+    
+            let mut link_id = INVALID_LINK_ID;
+            do {
+                if link_flags[state.node_id()] {
+                    //link_id = update_link_id(link_id, state.node_id());
+    
+                    //const std::size_t prev_query_pos = state.query_pos();
+                    //if (match(agent, get_link(state.node_id(), link_id))) {
+                    //  return true;
+                    //} else if (state.query_pos() != prev_query_pos) {
+                    //  return false;
+                    //}
+                } else {
+                    // Character for node 
+                    bases_[state.node_id()]
+
                     state.set_query_pos(state.query_pos() + 1);
                     return true;
                 }
