@@ -30,10 +30,11 @@ impl<'a> State<'a> {
     }
 
     fn push<'b>(&mut self, key: &'b[u8], trie: &'a LoudsTrie, node_id: NodeID,
-                louds_pos: LoudsPos, link_id: LinkID, key_pos: u32) {
+                louds_pos: LoudsPos, link_id: LinkID) {
         self.key_buf_.extend(key);
+        assert!(self.key_buf_.len() <= std::u32::MAX as usize);
         self.history_.push(History::new(trie, node_id, louds_pos, link_id,
-                                        key_pos));
+                                        self.key_buf_.len() as u32));
     }
 
     fn get_key(&self) -> &[u8] {
@@ -54,50 +55,42 @@ pub struct Nav<'a> {
     trie_: &'a LoudsTrie,
 }
 
+// For lookups, marisa does caching based on the input character.
+// We can't do that here. May want to remove or rethink the cache
+// implementation in light of this.
+
 impl<'a> Nav<'a> {
     pub fn new(trie: &'a LoudsTrie) -> Nav<'a> {
         Nav { state_: State::new(), trie_: trie }
     }
 
-    //pub fn has_child(&self) -> bool {
-    //fn child_pos(&self) -> Option<(NodeID, LoudsPos)> {
+    pub fn has_child(&mut self) -> bool {
+        self.trie_.has_child(self.state_.get_node_id())
+    }
     pub fn go_to_child(&mut self) -> bool {
-        // For lookups, marisa does caching based on the input character.
-        // We can't do that here. May want to remove or rethink the cache
-        // implementation in light of this.
-
-        //let louds = &self.trie_.louds_;
-        //let state = &mut self.state_;
-        //let link_flags = &self.trie_.link_flags_;
-
-        if let Some((node_id, louds_pos))
-        = self.trie_.child_pos(self.state_.get_node_id()) {
+        let init_node_id = self.state_.get_node_id();
+        if let Some((node_id, louds_pos)) = self.trie_.child_pos(init_node_id) {
+            if self.trie_.link_flags_.at(node_id.0 as usize) {
+                //link_id = update_link_id(link_id, state.node_id());
     
-            /*
-            let mut link_id = INVALID_LINK_ID;
-            do {
-                if link_flags[state.node_id()] {
-                    //link_id = update_link_id(link_id, state.node_id());
-    
-                    //const std::size_t prev_query_pos = state.query_pos();
-                    //if (match(agent, get_link(state.node_id(), link_id))) {
-                    //  return true;
-                    //} else if (state.query_pos() != prev_query_pos) {
-                    //  return false;
-                    //}
-                } else {
-                    // Character for node 
-                    bases_[state.node_id()]
+                //const std::size_t prev_query_pos = state.query_pos();
+                //if (match(agent, get_link(state.node_id(), link_id))) {
+                //  return true;
+                //} else if (state.query_pos() != prev_query_pos) {
+                //  return false;
+                //}
+            } else {
+                // Character for node 
+                let node_char = [ self.trie_.bases_[node_id.0 as usize] ];
 
-                    state.set_query_pos(state.query_pos() + 1);
-                    return true;
-                }
-                state.set_node_id(state.node_id() + 1);
-                ++louds_pos;
-            } while (louds_[louds_pos]);
-            */
+                // Not sure what this should be
+                let link_id = LinkID(0);
+
+                self.state_.push(&node_char, self.trie_, node_id, louds_pos,
+                                 link_id);
+                return true;
+            }
             false
-
         } else {
             false
         }
