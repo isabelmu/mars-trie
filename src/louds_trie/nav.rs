@@ -48,6 +48,10 @@ impl<'a> State<'a> {
     fn get_node_id(&self) -> NodeID {
         self.history_.last().unwrap().node_id_
     }
+
+    fn get_link_id(&self) -> LinkID {
+        self.history_.last().unwrap().link_id_
+    }
 }
 
 pub struct Nav<'a> {
@@ -69,28 +73,38 @@ impl<'a> Nav<'a> {
     }
     pub fn go_to_child(&mut self) -> bool {
         let init_node_id = self.state_.get_node_id();
+        let init_link_id = self.state_.get_link_id();
         if let Some((node_id, louds_pos)) = self.trie_.child_pos(init_node_id) {
             if self.trie_.link_flags_.at(node_id.0 as usize) {
-                //link_id = update_link_id(link_id, state.node_id());
-    
-                //const std::size_t prev_query_pos = state.query_pos();
-                //if (match(agent, get_link(state.node_id(), link_id))) {
-                //  return true;
-                //} else if (state.query_pos() != prev_query_pos) {
-                //  return false;
-                //}
+                let link_id = self.trie_.update_link_id(init_link_id.0 as usize,
+                                                        node_id.0 as usize);
+
+                let link = self.trie_.get_link_2(node_id.0 as usize, link_id);
+                // Proceed either to next trie or tail
+                match &self.trie_.next_trie_ {
+                    &Some(ref trie) => {
+                        // TODO: this.
+                    },
+                    &None => {
+                        // FIXME: Shouldn't need this temporary vector.
+                        //        'restore' should return an iterator, and
+                        //        state.push should consume it.
+                        let mut v = Vec::new();
+                        self.trie_.tail_.restore(link, &mut v);
+
+                        // Not sure if these values are correct/useful.
+                        // If some stuff is only needed for some nodes... should
+                        // reflect that in the types we use
+                        self.state_.push(&v, self.trie_, node_id, louds_pos,
+                                         LinkID(link_id as u32));
+                    }
+                }
             } else {
-                // Character for node 
                 let node_char = [ self.trie_.bases_[node_id.0 as usize] ];
-
-                // Not sure what this should be
-                let link_id = LinkID(0);
-
                 self.state_.push(&node_char, self.trie_, node_id, louds_pos,
-                                 link_id);
-                return true;
+                                 init_link_id);
             }
-            false
+            true
         } else {
             false
         }

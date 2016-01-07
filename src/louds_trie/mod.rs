@@ -1,7 +1,6 @@
 use std;
 use std::collections::VecDeque;
 
-use base::INVALID_LINK_ID;
 use cache::Cache;
 use config::Config;
 use config::CacheLevel;
@@ -30,6 +29,8 @@ struct NodeID(u32);
 
 #[derive(Clone, Copy, Debug)]
 struct LinkID(u32);
+
+const INVALID_LINK_ID: LinkID = LinkID(std::u32::MAX);
 
 /// Recursive LOUDS trie
 ///
@@ -613,10 +614,10 @@ impl LoudsTrie {
             as usize
     }
 
+    /// ...?
     fn update_link_id(&self, link_id: usize, node_id: usize) -> usize {
-        if link_id == INVALID_LINK_ID as usize
-        {
-            self.link_flags_.rank1(node_id)
+        if link_id == INVALID_LINK_ID.0 as usize {
+            self.get_link_id(node_id)
         } else {
             link_id + 1
         }
