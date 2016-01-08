@@ -74,14 +74,17 @@ impl<'a> Nav<'a> {
     pub fn go_to_child(&mut self) -> bool {
         let init_node_id = self.state_.get_node_id();
         let init_link_id = self.state_.get_link_id();
-        if let Some((node_id, louds_pos)) = self.trie_.child_pos(init_node_id) {
-            if self.trie_.link_flags_.at(node_id.0 as usize) {
-                let link_id = self.trie_.update_link_id(init_link_id.0 as usize,
-                                                        node_id.0 as usize);
 
-                let link = self.trie_.get_link_2(node_id.0 as usize, link_id);
+        let mut trie = &self.trie_;
+
+        if let Some((node_id, louds_pos)) = trie.child_pos(init_node_id) {
+            if trie.link_flags_.at(node_id.0 as usize) {
+                let link_id = trie.update_link_id(init_link_id.0 as usize,
+                                                  node_id.0 as usize);
+
+                let link = trie.get_link_2(node_id.0 as usize, link_id);
                 // Proceed either to next trie or tail
-                match &self.trie_.next_trie_ {
+                match &trie.next_trie_ {
                     &Some(ref trie) => {
                         // TODO: this.
                     },
@@ -90,18 +93,18 @@ impl<'a> Nav<'a> {
                         //        'restore' should return an iterator, and
                         //        state.push should consume it.
                         let mut v = Vec::new();
-                        self.trie_.tail_.restore(link, &mut v);
+                        trie.tail_.restore(link, &mut v);
 
                         // Not sure if these values are correct/useful.
                         // If some stuff is only needed for some nodes... should
                         // reflect that in the types we use
-                        self.state_.push(&v, self.trie_, node_id, louds_pos,
+                        self.state_.push(&v, trie, node_id, louds_pos,
                                          LinkID(link_id as u32));
                     }
                 }
             } else {
-                let node_char = [ self.trie_.bases_[node_id.0 as usize] ];
-                self.state_.push(&node_char, self.trie_, node_id, louds_pos,
+                let node_char = [ trie.bases_[node_id.0 as usize] ];
+                self.state_.push(&node_char, trie, node_id, louds_pos,
                                  init_link_id);
             }
             true
