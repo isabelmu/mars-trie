@@ -75,9 +75,9 @@ impl<'a> Nav<'a> {
         let init_node_id = self.state_.get_node_id();
         let init_link_id = self.state_.get_link_id();
 
-        let mut trie = &self.trie_;
+        let mut trie = self.trie_;
 
-        if let Some((node_id, louds_pos)) = trie.child_pos(init_node_id) {
+        while let Some((node_id, louds_pos)) = trie.child_pos(init_node_id) {
             if trie.link_flags_.at(node_id.0 as usize) {
                 let link_id = trie.update_link_id(init_link_id.0 as usize,
                                                   node_id.0 as usize);
@@ -85,8 +85,9 @@ impl<'a> Nav<'a> {
                 let link = trie.get_link_2(node_id.0 as usize, link_id);
                 // Proceed either to next trie or tail
                 match &trie.next_trie_ {
-                    &Some(ref trie) => {
-                        // TODO: this.
+                    &Some(ref next_trie) => {
+                        trie = &**next_trie;
+                        continue;
                     },
                     &None => {
                         // FIXME: Shouldn't need this temporary vector.
@@ -102,15 +103,15 @@ impl<'a> Nav<'a> {
                                          LinkID(link_id as u32));
                     }
                 }
+                return true;
             } else {
                 let node_char = [ trie.bases_[node_id.0 as usize] ];
                 self.state_.push(&node_char, trie, node_id, louds_pos,
                                  init_link_id);
+                return true;
             }
-            true
-        } else {
-            false
         }
+        false
     }
     pub fn has_sibling(&self) -> bool {
         panic!("not implemented")
