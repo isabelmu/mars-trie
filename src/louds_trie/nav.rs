@@ -73,20 +73,17 @@ impl<'a> Nav<'a> {
     }
     pub fn go_to_child(&mut self) -> bool {
         let init_node_id = self.state_.get_node_id();
-        let init_link_id = self.state_.get_link_id();
 
         let mut trie = self.trie_;
 
         while let Some((node_id, louds_pos)) = trie.child_pos(init_node_id) {
             if trie.link_flags_.at(node_id.0 as usize) {
-                let link_id = trie.update_link_id(init_link_id.0 as usize,
-                                                  node_id.0 as usize);
-
-                let link = trie.get_link_2(node_id.0 as usize, link_id);
+                let (next_node_id, link_id) = trie.get_linked_ids(node_id);
                 // Proceed either to next trie or tail
                 match &trie.next_trie_ {
                     &Some(ref next_trie) => {
                         trie = &**next_trie;
+                        // guess we don't want to call child_pos here... hmm
                         continue;
                     },
                     &None => {
@@ -107,7 +104,7 @@ impl<'a> Nav<'a> {
             } else {
                 let node_char = [ trie.bases_[node_id.0 as usize] ];
                 self.state_.push(&node_char, trie, node_id, louds_pos,
-                                 init_link_id);
+                                 INVALID_LINK_ID);
                 return true;
             }
         }

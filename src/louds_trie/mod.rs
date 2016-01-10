@@ -95,24 +95,38 @@ pub struct LoudsTrie {
     /// Bit vector of terminal-ness per node id. Indexed by node. Can be used to
     /// retrieve NodeID from user-facing word ID:
     ///
-    ///     let node_id = self.terminal_flags_.select1(id);
+    ///     let node_id = NodeID(self.terminal_flags_.select1(id));
     ///
     terminal_flags_: BitVec,
 
     /// Per node, does this node have a link to another trie? Indexed by node.
+    /// LinkIDs are assigned sequentially to nodes that have links, so
+    ///
+    ///     let link_id = LinkID(self.link_flags_.rank1(node_id))
+    ///
     link_flags_: BitVec,
 
     /// Base characters, limited to one per node. Indexed by node. Present if
     /// link_flags_[node_id] is false.
+    ///
+    /// If link_flags[node_id] is true, bases_[node_id] contains the low byte of
+    /// the connected NodeID (returned by `get_linked_node_id`). This NodeID
+    /// points into the next trie if there is one, or into the Tail.
     bases_: Vec<u8>,
+
+    /// Upper bits of the connected node_id
     extras_: FlatVec,
 
-    /// Tail strings, accessed by link ID.
+    /// Tail strings, accessed by NodeID returned from `get_linked_node_id`.
     tail_: Tail,
+
+    /// Next trie
     next_trie_: Option<Box<LoudsTrie> >,
+
     cache_: Vec<Cache>,
     cache_mask_: usize,
     num_l1_nodes_: usize,
+
     config_: Config,
 //    mapper_: Mapper,
 }
@@ -511,7 +525,7 @@ impl LoudsTrie {
         loop {
             if self.link_flags_.at(node_id) {
                 let prev_key_pos = key_out.len();
-                self.restore(self.get_link(node_id), key_out);
+                self.restore(self.get_linked_node_id(node_id), key_out);
                 key_out[prev_key_pos..].reverse();
             } else {
                 key_out.push(self.bases_[node_id]);
@@ -554,7 +568,7 @@ impl LoudsTrie {
                 }
             } else {
                 if self.link_flags_.at(node_id) {
-                    self.restore(self.get_link(node_id), key_out);
+                    self.restore(self.get_linked_node_id(node_id), key_out);
                 } else {
                     key_out.push(self.bases_[node_id]);
                 }
@@ -605,13 +619,21 @@ impl LoudsTrie {
         self.link_flags_.rank1(node_id)
     }
 
-    fn get_link(&self, node_id: usize) -> usize {
+    fn get_linked_node_id(&self, node_id: usize) -> usize {
         self.get_link_2(node_id, self.get_link_id(node_id))
     }
 
-    fn get_link_2(&self, node_id: usize, link_id: usize) -> usize {
+    fn get_linked_node_id_2(&self, node_id: usize, link_id: usize) -> usize {
         ((self.bases_[node_id] as u32) | (self.extras_.at(link_id) * 256))
             as usize
+    }
+
+    fn get_linked_ids(&self, node_id: usize) -> (NodeID, LinkID) {
+        let link_id = self.get_link_id(node_id);
+        let node_id = self.get_linked_node_id_2(node_id, link_id);
+        assert!(link_id <= std::u32::MAX as usize);
+        assert!(node_id <= std::u32::MAX as usize);
+        (NodeID(node_id), LinkID(link_id))
     }
 
     /// ...?
