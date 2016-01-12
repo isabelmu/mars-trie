@@ -1,6 +1,6 @@
 use std;
 use base::*;
-use super::{LoudsTrie, NodeID, LoudsPos, LinkID};
+use super::{LoudsTrie, NodeID, LoudsPos, LinkID, INVALID_LINK_ID};
 
 struct History<'a> {
     trie_: &'a LoudsTrie,
@@ -73,38 +73,38 @@ impl<'a> Nav<'a> {
     }
     pub fn go_to_child(&mut self) -> bool {
         let init_node_id = self.state_.get_node_id();
+        if let Some((node_id, louds_pos)) = self.trie_.child_pos(init_node_id) {
+            let mut trie = self.trie_;
+            loop {
+                if trie.link_flags_.at(node_id.0 as usize) {
+                    let (next_node_id, link_id) =
+                        trie.get_linked_ids(node_id.0 as usize);
+                    // Proceed either to next trie or tail
+                    match &trie.next_trie_ {
+                        &Some(ref next_trie) => {
+                            trie = &**next_trie;
+                            // push here...?
+                            continue;
+                        },
+                        &None => {
+                            // FIXME: Shouldn't need this temporary vector.
+                            //        'restore' should return an iterator, and
+                            //        state.push should consume it.
+                            let mut v = Vec::new();
+                            trie.tail_.restore(next_node_id.0 as usize, &mut v);
 
-        let mut trie = self.trie_;
-
-        while let Some((node_id, louds_pos)) = trie.child_pos(init_node_id) {
-            if trie.link_flags_.at(node_id.0 as usize) {
-                let (next_node_id, link_id) = trie.get_linked_ids(node_id);
-                // Proceed either to next trie or tail
-                match &trie.next_trie_ {
-                    &Some(ref next_trie) => {
-                        trie = &**next_trie;
-                        // guess we don't want to call child_pos here... hmm
-                        continue;
-                    },
-                    &None => {
-                        // FIXME: Shouldn't need this temporary vector.
-                        //        'restore' should return an iterator, and
-                        //        state.push should consume it.
-                        let mut v = Vec::new();
-                        trie.tail_.restore(link, &mut v);
-
-                        // Not sure if these values are correct/useful.
-                        // If some stuff is only needed for some nodes... should
-                        // reflect that in the types we use
-                        self.state_.push(&v, trie, node_id, louds_pos,
-                                         LinkID(link_id as u32));
+                            // Not sure if these values are correct/useful.
+                            // If some stuff is only needed for some nodes...
+                            // should reflect that in the types we use
+                            self.state_.push(&v, trie, node_id, louds_pos,
+                                             link_id);
+                        }
                     }
+                } else {
+                    let node_char = [ trie.bases_[node_id.0 as usize] ];
+                    self.state_.push(&node_char, trie, node_id, louds_pos,
+                                     INVALID_LINK_ID);
                 }
-                return true;
-            } else {
-                let node_char = [ trie.bases_[node_id.0 as usize] ];
-                self.state_.push(&node_char, trie, node_id, louds_pos,
-                                 INVALID_LINK_ID);
                 return true;
             }
         }

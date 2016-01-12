@@ -22,15 +22,15 @@ mod tail;
 pub const INVALID_EXTRA: u32 = std::u32::MAX >> 8;
 
 #[derive(Clone, Copy, Debug)]
-struct LoudsPos(u32);
+pub struct LoudsPos(u32);
 
 #[derive(Clone, Copy, Debug)]
-struct NodeID(u32);
+pub struct NodeID(u32);
 
 #[derive(Clone, Copy, Debug)]
-struct LinkID(u32);
+pub struct LinkID(u32);
 
-const INVALID_LINK_ID: LinkID = LinkID(std::u32::MAX);
+pub const INVALID_LINK_ID: LinkID = LinkID(std::u32::MAX);
 
 /// Recursive LOUDS trie
 ///
@@ -620,7 +620,7 @@ impl LoudsTrie {
     }
 
     fn get_linked_node_id(&self, node_id: usize) -> usize {
-        self.get_link_2(node_id, self.get_link_id(node_id))
+        self.get_linked_node_id_2(node_id, self.get_link_id(node_id))
     }
 
     fn get_linked_node_id_2(&self, node_id: usize, link_id: usize) -> usize {
@@ -633,7 +633,7 @@ impl LoudsTrie {
         let node_id = self.get_linked_node_id_2(node_id, link_id);
         assert!(link_id <= std::u32::MAX as usize);
         assert!(node_id <= std::u32::MAX as usize);
-        (NodeID(node_id), LinkID(link_id))
+        (NodeID(node_id as u32), LinkID(link_id as u32))
     }
 
     /// ...?
