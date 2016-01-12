@@ -68,7 +68,7 @@ impl<'a> Nav<'a> {
         Nav { state_: State::new(), trie_: trie }
     }
 
-    pub fn has_child(&mut self) -> bool {
+    pub fn has_child(&self) -> bool {
         self.trie_.has_child(self.state_.get_node_id())
     }
     pub fn go_to_child(&mut self) -> bool {
