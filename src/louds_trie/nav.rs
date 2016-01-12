@@ -77,13 +77,12 @@ impl<'a> Nav<'a> {
             let mut trie = self.trie_;
             loop {
                 if trie.link_flags_.at(node_id.0 as usize) {
-                    let (next_node_id, link_id) =
+                    let (node_id, link_id) =
                         trie.get_linked_ids(node_id.0 as usize);
                     // Proceed either to next trie or tail
                     match &trie.next_trie_ {
                         &Some(ref next_trie) => {
                             trie = &**next_trie;
-                            // push here...?
                             continue;
                         },
                         &None => {
@@ -91,7 +90,7 @@ impl<'a> Nav<'a> {
                             //        'restore' should return an iterator, and
                             //        state.push should consume it.
                             let mut v = Vec::new();
-                            trie.tail_.restore(next_node_id.0 as usize, &mut v);
+                            trie.tail_.restore(node_id.0 as usize, &mut v);
 
                             // Not sure if these values are correct/useful.
                             // If some stuff is only needed for some nodes...
