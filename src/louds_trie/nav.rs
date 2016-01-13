@@ -110,9 +110,17 @@ impl<'a> Nav<'a> {
         false
     }
     pub fn has_sibling(&self) -> bool {
-        panic!("not implemented")
+        // FIXME: Is this all...?
+        self.state_.history_.last().map(|h| {
+            h.trie_.louds_.at(h.louds_pos_.0 as usize + 1)
+        }).unwrap_or(false)
     }
     pub fn go_to_sibling(&mut self) -> bool {
+        // pop history and string
+        // increase louds_pos and node_id by 1 if we have a sibling
+        // get string (factor this out?)
+        // push new history & string
+
         panic!("not implemented")
     }
     pub fn has_parent(&self) -> bool {
