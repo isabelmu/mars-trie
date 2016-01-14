@@ -777,20 +777,6 @@ mod test {
     use std::default::Default;
     use super::LoudsTrie;
 
-    impl qc::Arbitrary for NumTries {
-        fn arbitrary<G: qc::Gen>(g: &mut G) -> NumTries {
-            // This is slow when using the full range...
-            //NumTries::new(g.gen_range(MIN_NUM_TRIES, MAX_NUM_TRIES + 1))
-            NumTries::new(g.gen_range(MIN_NUM_TRIES, 17))
-        }
-        fn shrink(&self) -> Box<Iterator<Item=Self>> {
-            let fewer = self.get() / 2;
-            let fewer = NumTries::new(fewer);
-            if fewer.get() > 0 { qc::single_shrinker(fewer) }
-                else { qc::empty_shrinker() }
-        }
-    }
-
     fn build_prop(v: Vec<String>, num_tries: NumTries) -> qc::TestResult {
         if v.iter().any(|x| x.is_empty()) {
             return qc::TestResult::discard();
