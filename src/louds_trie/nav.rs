@@ -217,8 +217,6 @@ impl DFT {
             }
         }
     }
-    // FIXME: Shouldn't this fail to compile? The output value's Some variant
-    //        aliases 'nav'
     fn next_terminal<'a, 'b>(&mut self, nav: &'b mut Nav<'a>)
       -> Option<&'b[u8]> {
         loop {
