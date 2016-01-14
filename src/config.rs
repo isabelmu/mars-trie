@@ -1,3 +1,5 @@
+use quickcheck as qc;
+
 /// Min/max values, flags and masks for dictionary settings are defined below.
 /// Please note that unspecified settings will be replaced with the default
 /// settings. For example, 0 is equivalent to (NumTries::default() |
@@ -21,6 +23,19 @@ impl NumTries {
 impl Default for NumTries {
     fn default() -> NumTries {
         NumTries::new(3)
+    }
+}
+impl qc::Arbitrary for NumTries {
+    fn arbitrary<G: qc::Gen>(g: &mut G) -> NumTries {
+        // This is slow when using the full range...
+        //NumTries::new(g.gen_range(MIN_NUM_TRIES, MAX_NUM_TRIES + 1))
+        NumTries::new(g.gen_range(MIN_NUM_TRIES, 17))
+    }
+    fn shrink(&self) -> Box<Iterator<Item=Self>> {
+        let fewer = self.get() / 2;
+        let fewer = NumTries::new(fewer);
+        if fewer.get() > 0 { qc::single_shrinker(fewer) }
+            else { qc::empty_shrinker() }
     }
 }
 
