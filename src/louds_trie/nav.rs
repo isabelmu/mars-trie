@@ -233,14 +233,16 @@ impl DFT {
 
 #[cfg(test)]
 mod test {
+    use env_logger;
+    use std::cmp::Ordering;
     use quickcheck as qc;
-    use config::NumTries;
-    use super::Nav;
+    use config::{Config, NumTries};
+    use key::Key;
+    use super::{DFT, Nav};
     use super::super::LoudsTrie;
 
     fn restore_with_nav_prop(v: Vec<String>, num_tries: NumTries)
       -> qc::TestResult {
-/*
         if v.iter().any(|x| x.is_empty()) {
             return qc::TestResult::discard();
         }
@@ -249,17 +251,28 @@ mod test {
         let config = Config::new().with_num_tries(num_tries);
         let trie = LoudsTrie::build(&mut keys, &config);
 
-        let nav = Nav::new(&trie);
+        let mut nav = Nav::new(&trie);
+        let mut dft = DFT::new();
 
-                return qc::TestResult::failed();
-*/
-        qc::TestResult::passed()
+        
+        let mut vv1: Vec<Vec<u8>> = v.iter().map(|s| From::from(s.as_bytes()))
+                                    .collect();
+
+        let mut vv2: Vec<Vec<u8>> = Vec::new();
+        while let Some(s) = dft.next_terminal(&mut nav) {
+            vv2.push(From::from(s));
+        }
+
+        vv1.sort();
+        vv2.sort();
+        qc::TestResult::from_bool(vv1.cmp(&vv2) == Ordering::Equal)
     }
 
     #[test]
     fn restore_with_nav_qc() {
-        panic!()
-
+        let _ = env_logger::init();
+        qc::quickcheck(restore_with_nav_prop as fn(Vec<String>, NumTries)
+                       -> qc::TestResult);
     }
 
     #[test]
