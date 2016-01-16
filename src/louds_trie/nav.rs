@@ -11,6 +11,17 @@ struct State<'a> {
     //key_id_: u32,
 }
 
+impl<'a> std::fmt::Debug for State<'a> {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+        fmt.debug_struct("State")
+            .field("node_id_", &self.node_id_)
+            .field("louds_pos_", &self.louds_pos_)
+            .field("link_id_", &self.link_id_)
+            .field("key_pos_", &self.key_pos_)
+            .finish()
+    }
+}
+
 impl<'a> State<'a> {
     fn new(trie: &'a LoudsTrie, node_id: NodeID, louds_pos: LoudsPos,
            link_id: LinkID, key_pos: u32) -> State<'a> {
@@ -19,6 +30,7 @@ impl<'a> State<'a> {
     }
 }
 
+#[derive(Debug)]
 pub struct Nav<'a> {
     history_: Vec<State<'a> >,
     key_buf_: Vec<u8>,
@@ -46,6 +58,9 @@ impl<'a> Nav<'a> {
 
     fn push_str<'b>(&mut self, key: &'b[u8], trie: &'a LoudsTrie, node_id: NodeID,
                     louds_pos: LoudsPos, link_id: LinkID) {
+
+        debug!("push_str: {:?}", key);
+
         self.key_buf_.extend(key);
         assert!(self.key_buf_.len() <= std::u32::MAX as usize);
         self.history_.push(State::new(trie, node_id, louds_pos, link_id,
@@ -167,6 +182,9 @@ impl DFT {
         DFT::ToChild
     }
     fn depth_first_traversal_step<'a>(&mut self, nav: &mut Nav<'a>) -> bool {
+        debug!("{:?}", *nav);
+
+        panic!();
         match *self {
             DFT::ToChild => {
                 if nav.go_to_child() {
@@ -261,8 +279,8 @@ mod test {
 
     #[test]
     fn restore_with_nav_manual() {
-        panic!()
-
+        let _ = env_logger::init();
+        restore_with_nav_prop(vec!["Testing".to_owned()], NumTries::new(1));
     }
 }
 
