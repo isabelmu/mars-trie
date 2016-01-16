@@ -2,7 +2,7 @@ use std;
 use base::*;
 use super::{LoudsTrie, NodeID, LoudsPos, LinkID, INVALID_LINK_ID};
 
-struct History<'a> {
+struct State<'a> {
     trie_: &'a LoudsTrie,
     node_id_: NodeID,
     louds_pos_: LoudsPos,
@@ -11,40 +11,29 @@ struct History<'a> {
     //key_id_: u32,
 }
 
-impl<'a> History<'a> {
+impl<'a> State<'a> {
     fn new(trie: &'a LoudsTrie, node_id: NodeID, louds_pos: LoudsPos,
-           link_id: LinkID, key_pos: u32) -> History<'a> {
-        History { trie_: trie, node_id_: node_id, louds_pos_: louds_pos,
-                  link_id_: link_id, key_pos_: key_pos }
+           link_id: LinkID, key_pos: u32) -> State<'a> {
+        State { trie_: trie, node_id_: node_id, louds_pos_: louds_pos,
+                link_id_: link_id, key_pos_: key_pos }
     }
 }
 
-struct State<'a> {
-    history_: Vec<History<'a> >,
+pub struct Nav<'a> {
+    history_: Vec<State<'a> >,
     key_buf_: Vec<u8>,
 }
 
-impl<'a> State<'a> {
-    fn new(trie: &'a LoudsTrie) -> State<'a> {
-        let mut out = State { history_: Vec::new(), key_buf_: Vec::new() };
-        out.history_.push(History::new(trie, 0, 0, INVALID_LINK_ID, 0));
+// For lookups, marisa does caching based on the input character.
+// We can't do that here. May want to remove or rethink the cache
+// implementation in light of this.
+
+impl<'a> Nav<'a> {
+    fn new(trie: &'a LoudsTrie) -> Nav<'a> {
+        let mut out = Nav { history_: Vec::new(), key_buf_: Vec::new() };
+        out.history_.push(State::new(trie, NodeID(0), LoudsPos(0),
+                          INVALID_LINK_ID, 0));
         out
-    }
-
-    fn push<'b>(&mut self, key: &'b[u8], trie: &'a LoudsTrie, node_id: NodeID,
-                louds_pos: LoudsPos, link_id: LinkID) {
-        self.key_buf_.extend(key);
-        assert!(self.key_buf_.len() <= std::u32::MAX as usize);
-        self.history_.push(History::new(trie, node_id, louds_pos, link_id,
-                                        self.key_buf_.len() as u32));
-    }
-
-    fn get_key(&self) -> &[u8] {
-        &self.key_buf_[..]
-    }
-
-    fn pop(&mut self) -> Option<History<'a> > {
-        self.history_.pop()
     }
 
     fn get_node_id(&self) -> NodeID {
@@ -54,23 +43,17 @@ impl<'a> State<'a> {
     fn get_link_id(&self) -> LinkID {
         self.history_.last().unwrap().link_id_
     }
-}
 
-pub struct Nav<'a> {
-    state_: State<'a>,
-}
-
-// For lookups, marisa does caching based on the input character.
-// We can't do that here. May want to remove or rethink the cache
-// implementation in light of this.
-
-impl<'a> Nav<'a> {
-    pub fn new(trie: &'a LoudsTrie) -> Nav<'a> {
-        Nav { state_: State::new(&trie), }
+    fn push_str<'b>(&mut self, key: &'b[u8], trie: &'a LoudsTrie, node_id: NodeID,
+                    louds_pos: LoudsPos, link_id: LinkID) {
+        self.key_buf_.extend(key);
+        assert!(self.key_buf_.len() <= std::u32::MAX as usize);
+        self.history_.push(State::new(trie, node_id, louds_pos, link_id,
+                                      self.key_buf_.len() as u32));
     }
 
     fn push(&mut self, node_id: NodeID, louds_pos: LoudsPos) {
-        let mut trie = self.state_.history_.last().unwrap().trie_;
+        let mut trie = self.history_.last().unwrap().trie_;
         loop {
             if trie.link_flags_.at(node_id.0 as usize) {
                 let (node_id, link_id) = trie.get_linked_ids(node_id.0
@@ -91,24 +74,23 @@ impl<'a> Nav<'a> {
                         // Not sure if these values are correct/useful.
                         // If some stuff is only needed for some nodes...
                         // should reflect that in the types we use
-                        self.state_.push(&v, trie, node_id, louds_pos,
-                                         link_id);
+                        self.push_str(&v, trie, node_id, louds_pos, link_id);
                     }
                 }
             } else {
                 let node_char = [ trie.bases_[node_id.0 as usize] ];
-                self.state_.push(&node_char, trie, node_id, louds_pos,
-                                 INVALID_LINK_ID);
+                self.push_str(&node_char, trie, node_id, louds_pos,
+                              INVALID_LINK_ID);
             }
             break;
         }
     }
     pub fn has_child(&self) -> bool {
-        self.state_.history_.last().unwrap().trie_.has_child(self.state_.get_node_id())
+        self.history_.last().unwrap().trie_.has_child(self.get_node_id())
     }
     pub fn go_to_child(&mut self) -> bool {
-        let init_node_id = self.state_.get_node_id();
-        if let Some((node_id, louds_pos)) = self.state_.history_.last().unwrap()
+        let init_node_id = self.get_node_id();
+        if let Some((node_id, louds_pos)) = self.history_.last().unwrap()
                                             .trie_.child_pos(init_node_id) {
             self.push(node_id, louds_pos);
             true
@@ -118,7 +100,7 @@ impl<'a> Nav<'a> {
     }
     pub fn has_prev_sibling(&self) -> bool {
         // FIXME: Is this all...?
-        self.state_.history_.last().map(|h| {
+        self.history_.last().map(|h| {
             h.trie_.louds_.at(h.louds_pos_.0 as usize - 1)
         }).unwrap_or(false)
     }
@@ -131,12 +113,12 @@ impl<'a> Nav<'a> {
         panic!("not implemented")
     }
     pub fn has_sibling(&self) -> bool {
-        self.state_.history_.last().map(|h| {
+        self.history_.last().map(|h| {
             h.trie_.louds_.at(h.louds_pos_.0 as usize + 1)
         }).unwrap_or(false)
     }
     pub fn go_to_sibling(&mut self) -> bool {
-        if let Some(h) = self.state_.history_.pop() {
+        if let Some(h) = self.history_.pop() {
             if h.trie_.louds_.at(h.louds_pos_.0 as usize + 1) {
                 // FIXME: What about LinkID?
                 self.push(NodeID(h.node_id_.0 + 1),
@@ -156,7 +138,7 @@ impl<'a> Nav<'a> {
         // Could use LOUDS-trie select1(rank0(m)) to navigate upward (within a
         // single trie), but it's probably more efficient just to keep a stack
         // and pop to go up
-        self.state_.history_.pop().is_some()
+        self.history_.pop().is_some()
     }
     pub fn is_leaf(&self) -> bool {
         panic!("not implemented")
@@ -165,7 +147,7 @@ impl<'a> Nav<'a> {
     //    panic!("not implemented")
     //}
     pub fn get_u8(&self) -> &[u8] {
-        &self.state_.key_buf_[..]
+        &self.key_buf_[..]
     }
     pub fn is_end(&self) -> bool {
         panic!("not implemented")
