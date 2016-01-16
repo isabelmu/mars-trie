@@ -25,8 +25,10 @@ struct State<'a> {
 }
 
 impl<'a> State<'a> {
-    fn new() -> State<'a> {
-        State { history_: Vec::new(), key_buf_: Vec::new() }
+    fn new(trie: &'a LoudsTrie) -> State<'a> {
+        let mut out = State { history_: Vec::new(), key_buf_: Vec::new() };
+        out.history_.push(History::new(trie, 0, 0, INVALID_LINK_ID, 0));
+        out
     }
 
     fn push<'b>(&mut self, key: &'b[u8], trie: &'a LoudsTrie, node_id: NodeID,
@@ -56,7 +58,6 @@ impl<'a> State<'a> {
 
 pub struct Nav<'a> {
     state_: State<'a>,
-    trie_: &'a LoudsTrie,
 }
 
 // For lookups, marisa does caching based on the input character.
@@ -65,11 +66,11 @@ pub struct Nav<'a> {
 
 impl<'a> Nav<'a> {
     pub fn new(trie: &'a LoudsTrie) -> Nav<'a> {
-        Nav { state_: State::new(), trie_: trie }
+        Nav { state_: State::new(&trie), }
     }
 
     fn push(&mut self, node_id: NodeID, louds_pos: LoudsPos) {
-        let mut trie = self.trie_;
+        let mut trie = self.state_.history_.last().unwrap().trie_;
         loop {
             if trie.link_flags_.at(node_id.0 as usize) {
                 let (node_id, link_id) = trie.get_linked_ids(node_id.0
@@ -103,11 +104,12 @@ impl<'a> Nav<'a> {
         }
     }
     pub fn has_child(&self) -> bool {
-        self.trie_.has_child(self.state_.get_node_id())
+        self.state_.history_.last().unwrap().trie_.has_child(self.state_.get_node_id())
     }
     pub fn go_to_child(&mut self) -> bool {
         let init_node_id = self.state_.get_node_id();
-        if let Some((node_id, louds_pos)) = self.trie_.child_pos(init_node_id) {
+        if let Some((node_id, louds_pos)) = self.state_.history_.last().unwrap()
+                                            .trie_.child_pos(init_node_id) {
             self.push(node_id, louds_pos);
             true
         } else {
@@ -254,7 +256,6 @@ mod test {
         let mut nav = Nav::new(&trie);
         let mut dft = DFT::new();
 
-        
         let mut vv1: Vec<Vec<u8>> = v.iter().map(|s| From::from(s.as_bytes()))
                                     .collect();
 
@@ -266,6 +267,7 @@ mod test {
         vv1.sort();
         vv2.sort();
         qc::TestResult::from_bool(vv1.cmp(&vv2) == Ordering::Equal)
+        //qc::TestResult::passed()
     }
 
     #[test]
