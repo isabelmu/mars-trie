@@ -359,30 +359,30 @@ mod test {
     #[test]
     fn nav_restore_manual() {
         let _ = env_logger::init();
-        //assert_passed(nav_restore_prop_1(vec!["a".to_owned()]));
-        //assert_passed(nav_restore_prop_1(vec!["ab".to_owned()]));
-        //assert_passed(nav_restore_prop_1(vec!["\u{194}\u{128}".to_owned()]));
-        //assert_passed(nav_restore_prop_1(vec!["Testing".to_owned()]));
-        //assert_passed(nav_restore_prop_1(vec!["\u{80}".to_owned()]));
-        //assert_passed(nav_restore_prop_1(vec!["\u{7f}".to_owned()]));
-        //assert_passed(nav_restore_prop_1(vec!["~".to_owned()]));
-        //assert_passed(nav_restore_prop_1(vec!["\u{0}".to_owned()]));
-        //assert_passed(nav_restore_prop_1(vec!["Testing".to_owned(),
-        //                                      "T".to_owned()]));
-        //assert_passed(nav_restore_prop_1(vec!["Testing".to_owned(),
-        //                                      "Test".to_owned()]));
-        //assert_passed(nav_restore_prop_1(vec!["trouble".to_owned(),
-        //                                      "Threep".to_owned()]));
-        //assert_passed(nav_restore_prop_1(vec!["Threep".to_owned(),
-        //                                      "Test".to_owned()]));
+        assert_passed(nav_restore_prop_1(vec!["a".to_owned()]));
+        assert_passed(nav_restore_prop_1(vec!["ab".to_owned()]));
+        assert_passed(nav_restore_prop_1(vec!["\u{194}\u{128}".to_owned()]));
+        assert_passed(nav_restore_prop_1(vec!["Testing".to_owned()]));
+        assert_passed(nav_restore_prop_1(vec!["\u{80}".to_owned()]));
+        assert_passed(nav_restore_prop_1(vec!["\u{7f}".to_owned()]));
+        assert_passed(nav_restore_prop_1(vec!["~".to_owned()]));
+        assert_passed(nav_restore_prop_1(vec!["\u{0}".to_owned()]));
+        assert_passed(nav_restore_prop_1(vec!["Testing".to_owned(),
+                                              "T".to_owned()]));
+        assert_passed(nav_restore_prop_1(vec!["Testing".to_owned(),
+                                              "Test".to_owned()]));
+        assert_passed(nav_restore_prop_1(vec!["trouble".to_owned(),
+                                              "Threep".to_owned()]));
+        assert_passed(nav_restore_prop_1(vec!["Threep".to_owned(),
+                                              "Test".to_owned()]));
         assert_passed(nav_restore_prop_1(vec!["trouble".to_owned(),
                                               "Threep".to_owned(),
                                               "Test".to_owned()]));
-        //assert_passed(nav_restore_prop_1(vec!["Testing".to_owned(),
-        //                                      "trouble".to_owned(),
-        //                                      "Trouble".to_owned(),
-        //                                      "Threep".to_owned(),
-        //                                      "Test".to_owned()]));
+        assert_passed(nav_restore_prop_1(vec!["Testing".to_owned(),
+                                              "trouble".to_owned(),
+                                              "Trouble".to_owned(),
+                                              "Threep".to_owned(),
+                                              "Test".to_owned()]));
     }
 }
 
