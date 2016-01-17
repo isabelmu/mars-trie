@@ -60,10 +60,11 @@ impl<'a> Nav<'a> {
 //        debug!("push_str(key: {:#?}, node_id: {:#?}, louds_pos: {:#?}, \
 //                link_id: {:#?}", key, node_id, louds_pos, link_id);
 
+        let old_len = self.key_buf_.len();
         self.key_buf_.extend(key);
-        assert!(self.key_buf_.len() <= std::u32::MAX as usize);
+        assert!(old_len <= std::u32::MAX as usize);
         self.history_.push(State::new(trie, node_id, louds_pos, link_id,
-                                      self.key_buf_.len() as u32));
+                                      old_len as u32));
     }
 
     fn push(&mut self, mut node_id: NodeID, louds_pos: LoudsPos) {
@@ -109,7 +110,7 @@ impl<'a> Nav<'a> {
             .unwrap_or(false)
     }
     pub fn go_to_child(&mut self) -> bool {
-        //debug!("go_to_child");
+        debug!("go_to_child");
         if let Some((node_id, louds_pos)) =
             self.history_.last()
             .and_then(|s| { s.trie_.child_pos(s.node_id_) })
@@ -143,11 +144,18 @@ impl<'a> Nav<'a> {
     }
     pub fn go_to_sibling(&mut self) -> bool {
         debug!("go_to_sibling");
-        if let Some(h) = self.history_.pop() {
-            if h.trie_.louds_.at(h.louds_pos_.0 as usize + 1) {
+        if self.history_.len() < 2 {
+            return false;
+        }
+        if let Some(s) = self.history_.pop() {
+            let cur_len = self.key_buf_.len();
+            debug!("s.key_pos_: {:?}, cur_len: {:?}", s.key_pos_, cur_len);
+            assert!((s.key_pos_ as usize) < cur_len);
+            self.key_buf_.truncate(s.key_pos_ as usize);
+            if s.trie_.louds_.at(s.louds_pos_.0 as usize + 1) {
                 // FIXME: What about LinkID?
-                self.push(NodeID(h.node_id_.0 + 1),
-                          LoudsPos(h.louds_pos_.0 + 1));
+                self.push(NodeID(s.node_id_.0 + 1),
+                          LoudsPos(s.louds_pos_.0 + 1));
                 true
             } else {
                 false
@@ -160,11 +168,24 @@ impl<'a> Nav<'a> {
         panic!("not implemented")
     }
     pub fn go_to_parent(&mut self) -> bool {
-        //debug!("go_to_parent");
+        debug!("go_to_parent");
         // Could use LOUDS-trie select1(rank0(m)) to navigate upward (within a
         // single trie), but it's probably more efficient just to keep a stack
         // and pop to go up
-        self.history_.pop().is_some()
+
+        if self.history_.len() == 1 {
+            self.history_.pop();
+            return false;
+        }
+        
+        if let Some(s) = self.history_.pop() {
+            let cur_len = self.key_buf_.len();
+            assert!((s.key_pos_ as usize) < cur_len);
+            self.key_buf_.truncate(s.key_pos_ as usize);
+            true
+        } else {
+            false
+        }
     }
     pub fn is_leaf(&self) -> bool {
         //debug!("is_leaf");
@@ -260,12 +281,13 @@ mod test {
 
     fn nav_restore_prop(v: Vec<String>, num_tries: NumTries)
       -> qc::TestResult {
+        debug!("in: {:?}", v);
         let mut vu: Vec<Vec<u8>> = Vec::new();
         for s in v.iter() {
             vu.push(From::from(s.as_bytes()));
         }
+        debug!("u8: {:?}", vu);
 
-        debug!("in: {:?}", vu);
         if v.iter().any(|x| x.is_empty()) {
             debug!("");
             return qc::TestResult::discard();
@@ -285,11 +307,12 @@ mod test {
         while let Some(s) = dft.next_terminal(&mut nav) {
             vv2.push(From::from(s));
         }
-        debug!("vv1: {:?}", vv1);
-        debug!("vv2: {:?}", vv2);
 
         vv1.sort();
         vv2.sort();
+        debug!("vv1: {:?}", vv1);
+        debug!("vv2: {:?}", vv2);
+
         let b = vv1.cmp(&vv2) == Ordering::Equal;
         debug!("equal: {:?}", b);
         debug!("");
@@ -322,20 +345,28 @@ mod test {
     fn nav_restore_manual() {
         let _ = env_logger::init();
         //assert_passed(nav_restore_prop_1(vec!["a".to_owned()]));
-        assert_passed(nav_restore_prop_1(vec!["ab".to_owned()]));
-        assert_passed(nav_restore_prop_1(vec!["\u{194}\u{128}".to_owned()]));
-        assert_passed(nav_restore_prop_1(vec!["Testing".to_owned()]));
-        assert_passed(nav_restore_prop_1(vec!["\u{80}".to_owned()]));
-        assert_passed(nav_restore_prop_1(vec!["\u{7f}".to_owned()]));
-        assert_passed(nav_restore_prop_1(vec!["~".to_owned()]));
-        assert_passed(nav_restore_prop_1(vec!["\u{0}".to_owned()]));
-        assert_passed(nav_restore_prop_1(vec!["Testing".to_owned(),
-                                              "Test".to_owned()]));
-        assert_passed(nav_restore_prop_1(vec!["Testing".to_owned(),
-                                              "trouble".to_owned(),
-                                              "Trouble".to_owned(),
+        //assert_passed(nav_restore_prop_1(vec!["ab".to_owned()]));
+        //assert_passed(nav_restore_prop_1(vec!["\u{194}\u{128}".to_owned()]));
+        //assert_passed(nav_restore_prop_1(vec!["Testing".to_owned()]));
+        //assert_passed(nav_restore_prop_1(vec!["\u{80}".to_owned()]));
+        //assert_passed(nav_restore_prop_1(vec!["\u{7f}".to_owned()]));
+        //assert_passed(nav_restore_prop_1(vec!["~".to_owned()]));
+        //assert_passed(nav_restore_prop_1(vec!["\u{0}".to_owned()]));
+        //assert_passed(nav_restore_prop_1(vec!["Testing".to_owned(),
+        //                                      "T".to_owned()]));
+        //assert_passed(nav_restore_prop_1(vec!["Testing".to_owned(),
+        //                                      "Test".to_owned()]));
+        assert_passed(nav_restore_prop_1(vec![
                                               "Threep".to_owned(),
                                               "Test".to_owned()]));
+        //assert_passed(nav_restore_prop_1(vec!["trouble".to_owned(),
+        //                                      "Threep".to_owned(),
+        //                                      "Test".to_owned()]));
+        //assert_passed(nav_restore_prop_1(vec!["Testing".to_owned(),
+        //                                      "trouble".to_owned(),
+        //                                      "Trouble".to_owned(),
+        //                                      "Threep".to_owned(),
+        //                                      "Test".to_owned()]));
     }
 }
 
