@@ -79,7 +79,6 @@ impl<'a> Nav<'a> {
                 // Proceed either to next trie or tail
                 match &trie.next_trie_ {
                     &Some(ref next_trie) => {
-                        panic!();
                         trie = &**next_trie;
                         node_id = linked_node_id; // not sure about this
                         continue;
@@ -293,7 +292,7 @@ mod test {
     use super::{DFT, Nav};
     use super::super::LoudsTrie;
 
-    fn nav_restore_prop(v: Vec<String>, num_tries: NumTries)
+    fn navr_prop(v: Vec<String>, num_tries: NumTries)
       -> qc::TestResult {
         //debug!("in: {:?}", v);
         //let mut vu: Vec<Vec<u8>> = Vec::new();
@@ -334,55 +333,76 @@ mod test {
         qc::TestResult::from_bool(b)
     }
 
-    fn nav_restore_prop_1(v: Vec<String>) -> qc::TestResult {
-        nav_restore_prop(v, NumTries::new(1))
+    fn navr_prop_str(v: Vec<&str>, num_tries: NumTries)
+      -> qc::TestResult {
+        let v_owned: Vec<String> = v.iter().map(|&s| s.to_owned()).collect();
+        navr_prop(v_owned, num_tries)
+    }
+
+    fn navr_prop_1(v: Vec<String>) -> qc::TestResult {
+        navr_prop(v, NumTries::new(1))
+    }
+
+    fn navr_prop_str_1(v: Vec<&str>) -> qc::TestResult {
+        navr_prop_str(v, NumTries::new(1))
+    }
+
+    fn navr_prop_str_2(v: Vec<&str>) -> qc::TestResult {
+        navr_prop_str(v, NumTries::new(2))
     }
 
     #[test]
-    fn nav_restore_qc() {
+    fn navr_qc() {
         let _ = env_logger::init();
-        qc::quickcheck(nav_restore_prop as fn(Vec<String>, NumTries)
+        qc::quickcheck(navr_prop as fn(Vec<String>, NumTries)
                        -> qc::TestResult);
     }
 
     #[test]
-    fn nav_restore_qc_1() {
+    fn navr_qc_1() {
         let _ = env_logger::init();
-        qc::quickcheck(nav_restore_prop_1 as fn(Vec<String>)
+        qc::quickcheck(navr_prop_1 as fn(Vec<String>)
                        -> qc::TestResult);
     }
 
-    fn assert_passed(tr: qc::TestResult) {
+    fn assert_p(tr: qc::TestResult) {
         assert!(!tr.is_failure());
     }
 
     #[test]
-    fn nav_restore_manual() {
+    fn navr_manual() {
         let _ = env_logger::init();
-        assert_passed(nav_restore_prop_1(vec!["a".to_owned()]));
-        assert_passed(nav_restore_prop_1(vec!["ab".to_owned()]));
-        assert_passed(nav_restore_prop_1(vec!["\u{194}\u{128}".to_owned()]));
-        assert_passed(nav_restore_prop_1(vec!["Testing".to_owned()]));
-        assert_passed(nav_restore_prop_1(vec!["\u{80}".to_owned()]));
-        assert_passed(nav_restore_prop_1(vec!["\u{7f}".to_owned()]));
-        assert_passed(nav_restore_prop_1(vec!["~".to_owned()]));
-        assert_passed(nav_restore_prop_1(vec!["\u{0}".to_owned()]));
-        assert_passed(nav_restore_prop_1(vec!["Testing".to_owned(),
-                                              "T".to_owned()]));
-        assert_passed(nav_restore_prop_1(vec!["Testing".to_owned(),
-                                              "Test".to_owned()]));
-        assert_passed(nav_restore_prop_1(vec!["trouble".to_owned(),
-                                              "Threep".to_owned()]));
-        assert_passed(nav_restore_prop_1(vec!["Threep".to_owned(),
-                                              "Test".to_owned()]));
-        assert_passed(nav_restore_prop_1(vec!["trouble".to_owned(),
-                                              "Threep".to_owned(),
-                                              "Test".to_owned()]));
-        assert_passed(nav_restore_prop_1(vec!["Testing".to_owned(),
-                                              "trouble".to_owned(),
-                                              "Trouble".to_owned(),
-                                              "Threep".to_owned(),
-                                              "Test".to_owned()]));
+        assert_p(navr_prop_str_1(vec!["a"]));
+        assert_p(navr_prop_str_1(vec!["ab"]));
+        assert_p(navr_prop_str_1(vec!["\u{194}\u{128}"]));
+        assert_p(navr_prop_str_1(vec!["Testing"]));
+        assert_p(navr_prop_str_1(vec!["\u{80}"]));
+        assert_p(navr_prop_str_1(vec!["\u{7f}"]));
+        assert_p(navr_prop_str_1(vec!["~"]));
+        assert_p(navr_prop_str_1(vec!["\u{0}"]));
+        assert_p(navr_prop_str_1(vec!["Testing", "T"]));
+        assert_p(navr_prop_str_1(vec!["Testing", "Test"]));
+        assert_p(navr_prop_str_1(vec!["trouble", "Threep"]));
+        assert_p(navr_prop_str_1(vec!["Threep", "Test"]));
+        assert_p(navr_prop_str_1(vec!["trouble", "Threep", "Test"]));
+        assert_p(navr_prop_str_1(
+            vec!["Testing", "trouble", "Trouble", "Threep", "Test"]));
+
+        assert_p(navr_prop_str_2(vec!["a"]));
+        assert_p(navr_prop_str_2(vec!["ab"]));
+        assert_p(navr_prop_str_2(vec!["\u{194}\u{128}"]));
+        assert_p(navr_prop_str_2(vec!["Testing"]));
+        assert_p(navr_prop_str_2(vec!["\u{80}"]));
+        assert_p(navr_prop_str_2(vec!["\u{7f}"]));
+        assert_p(navr_prop_str_2(vec!["~"]));
+        assert_p(navr_prop_str_2(vec!["\u{0}"]));
+        assert_p(navr_prop_str_2(vec!["Testing", "T"]));
+        assert_p(navr_prop_str_2(vec!["Testing", "Test"]));
+        assert_p(navr_prop_str_2(vec!["trouble", "Threep"]));
+        assert_p(navr_prop_str_2(vec!["Threep", "Test"]));
+        assert_p(navr_prop_str_2(vec!["trouble", "Threep", "Test"]));
+        assert_p(navr_prop_str_2(
+            vec!["Testing", "trouble", "Trouble", "Threep", "Test"]));
     }
 }
 
