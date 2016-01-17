@@ -55,6 +55,8 @@ impl<'a> Nav<'a> {
     fn push_str<'b>(&mut self, key: &'b[u8], trie: &'a LoudsTrie, node_id: NodeID,
                     louds_pos: LoudsPos, link_id: LinkID) {
 
+        debug!("push_str(key: {:?})", key);
+
 //        debug!("push_str(key: {:#?}, node_id: {:#?}, louds_pos: {:#?}, \
 //                link_id: {:#?}", key, node_id, louds_pos, link_id);
 
@@ -69,12 +71,13 @@ impl<'a> Nav<'a> {
         let mut trie = self.history_.last().unwrap().trie_;
         loop {
             if trie.link_flags_.at(node_id.0 as usize) {
-//                debug!("Link flags TRUE");
+                debug!("Link flags TRUE");
                 let (linked_node_id, link_id) = trie.get_linked_ids(node_id.0
                                                                     as usize);
                 // Proceed either to next trie or tail
                 match &trie.next_trie_ {
                     &Some(ref next_trie) => {
+                        panic!();
                         trie = &**next_trie;
                         node_id = linked_node_id; // not sure about this
                         continue;
@@ -84,7 +87,7 @@ impl<'a> Nav<'a> {
                         //        'restore' should return an iterator, and
                         //        state.push should consume it.
                         let mut v = Vec::new();
-                        trie.tail_.restore(node_id.0 as usize, &mut v);
+                        trie.tail_.restore(linked_node_id.0 as usize, &mut v);
 
                         // Not sure if these values are correct/useful.
                         // If some stuff is only needed for some nodes...
@@ -93,7 +96,7 @@ impl<'a> Nav<'a> {
                     }
                 }
             } else {
-//                debug!("Link flags FALSE");
+                debug!("Link flags FALSE");
                 let node_char = [ trie.bases_[node_id.0 as usize] ];
                 self.push_str(&node_char, trie, node_id, louds_pos,
                               INVALID_LINK_ID);
@@ -106,6 +109,7 @@ impl<'a> Nav<'a> {
             .unwrap_or(false)
     }
     pub fn go_to_child(&mut self) -> bool {
+        //debug!("go_to_child");
         if let Some((node_id, louds_pos)) =
             self.history_.last()
             .and_then(|s| { s.trie_.child_pos(s.node_id_) })
@@ -138,6 +142,7 @@ impl<'a> Nav<'a> {
         }).unwrap_or(false)
     }
     pub fn go_to_sibling(&mut self) -> bool {
+        debug!("go_to_sibling");
         if let Some(h) = self.history_.pop() {
             if h.trie_.louds_.at(h.louds_pos_.0 as usize + 1) {
                 // FIXME: What about LinkID?
@@ -155,12 +160,14 @@ impl<'a> Nav<'a> {
         panic!("not implemented")
     }
     pub fn go_to_parent(&mut self) -> bool {
+        //debug!("go_to_parent");
         // Could use LOUDS-trie select1(rank0(m)) to navigate upward (within a
         // single trie), but it's probably more efficient just to keep a stack
         // and pop to go up
         self.history_.pop().is_some()
     }
     pub fn is_leaf(&self) -> bool {
+        //debug!("is_leaf");
         self.history_.last().map(|s|
             s.trie_.terminal_flags_.at(s.node_id_.0 as usize)
         ).unwrap_or(false)
@@ -314,6 +321,8 @@ mod test {
     #[test]
     fn nav_restore_manual() {
         let _ = env_logger::init();
+        //assert_passed(nav_restore_prop_1(vec!["a".to_owned()]));
+        assert_passed(nav_restore_prop_1(vec!["ab".to_owned()]));
         assert_passed(nav_restore_prop_1(vec!["\u{194}\u{128}".to_owned()]));
         assert_passed(nav_restore_prop_1(vec!["Testing".to_owned()]));
         assert_passed(nav_restore_prop_1(vec!["\u{80}".to_owned()]));
