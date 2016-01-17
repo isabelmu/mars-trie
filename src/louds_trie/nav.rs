@@ -144,13 +144,13 @@ impl<'a> Nav<'a> {
     }
     pub fn go_to_sibling(&mut self) -> bool {
         debug!("go_to_sibling");
-        if self.history_.len() < 2 {
-            return false;
-        }
+        //if self.history_.len() < 2 {
+        //    return false;
+        //}
         if let Some(s) = self.history_.pop() {
             let cur_len = self.key_buf_.len();
             debug!("s.key_pos_: {:?}, cur_len: {:?}", s.key_pos_, cur_len);
-            assert!((s.key_pos_ as usize) < cur_len);
+            assert!((s.key_pos_ as usize) <= cur_len);
             self.key_buf_.truncate(s.key_pos_ as usize);
             if s.trie_.louds_.at(s.louds_pos_.0 as usize + 1) {
                 // FIXME: What about LinkID?
@@ -173,14 +173,14 @@ impl<'a> Nav<'a> {
         // single trie), but it's probably more efficient just to keep a stack
         // and pop to go up
 
-        if self.history_.len() == 1 {
-            self.history_.pop();
-            return false;
-        }
+        //if self.history_.len() == 1 {
+        //    self.history_.pop();
+        //    return false;
+        //}
         
         if let Some(s) = self.history_.pop() {
             let cur_len = self.key_buf_.len();
-            assert!((s.key_pos_ as usize) < cur_len);
+            assert!((s.key_pos_ as usize) <= cur_len);
             self.key_buf_.truncate(s.key_pos_ as usize);
             true
         } else {
@@ -359,9 +359,9 @@ mod test {
         assert_passed(nav_restore_prop_1(vec![
                                               "Threep".to_owned(),
                                               "Test".to_owned()]));
-        //assert_passed(nav_restore_prop_1(vec!["trouble".to_owned(),
-        //                                      "Threep".to_owned(),
-        //                                      "Test".to_owned()]));
+        assert_passed(nav_restore_prop_1(vec!["trouble".to_owned(),
+                                              "Threep".to_owned(),
+                                              "Test".to_owned()]));
         //assert_passed(nav_restore_prop_1(vec!["Testing".to_owned(),
         //                                      "trouble".to_owned(),
         //                                      "Trouble".to_owned(),
