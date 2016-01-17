@@ -48,10 +48,6 @@ impl<'a> Nav<'a> {
         out
     }
 
-    fn get_node_id(&self) -> NodeID {
-        self.history_.last().unwrap().node_id_
-    }
-
     fn get_link_id(&self) -> LinkID {
         self.history_.last().unwrap().link_id_
     }
@@ -59,7 +55,8 @@ impl<'a> Nav<'a> {
     fn push_str<'b>(&mut self, key: &'b[u8], trie: &'a LoudsTrie, node_id: NodeID,
                     louds_pos: LoudsPos, link_id: LinkID) {
 
-        debug!("push_str: {:?}", key);
+//        debug!("push_str(key: {:#?}, node_id: {:#?}, louds_pos: {:#?}, \
+//                link_id: {:#?}", key, node_id, louds_pos, link_id);
 
         self.key_buf_.extend(key);
         assert!(self.key_buf_.len() <= std::u32::MAX as usize);
@@ -67,16 +64,19 @@ impl<'a> Nav<'a> {
                                       self.key_buf_.len() as u32));
     }
 
-    fn push(&mut self, node_id: NodeID, louds_pos: LoudsPos) {
+    fn push(&mut self, mut node_id: NodeID, louds_pos: LoudsPos) {
+//        debug!("push");
         let mut trie = self.history_.last().unwrap().trie_;
         loop {
             if trie.link_flags_.at(node_id.0 as usize) {
-                let (node_id, link_id) = trie.get_linked_ids(node_id.0
-                                                             as usize);
+//                debug!("Link flags TRUE");
+                let (linked_node_id, link_id) = trie.get_linked_ids(node_id.0
+                                                                    as usize);
                 // Proceed either to next trie or tail
                 match &trie.next_trie_ {
                     &Some(ref next_trie) => {
                         trie = &**next_trie;
+                        node_id = linked_node_id; // not sure about this
                         continue;
                     },
                     &None => {
@@ -93,6 +93,7 @@ impl<'a> Nav<'a> {
                     }
                 }
             } else {
+//                debug!("Link flags FALSE");
                 let node_char = [ trie.bases_[node_id.0 as usize] ];
                 self.push_str(&node_char, trie, node_id, louds_pos,
                               INVALID_LINK_ID);
@@ -101,15 +102,19 @@ impl<'a> Nav<'a> {
         }
     }
     pub fn has_child(&self) -> bool {
-        self.history_.last().unwrap().trie_.has_child(self.get_node_id())
+        self.history_.last().map(|s| s.trie_.has_child(s.node_id_))
+            .unwrap_or(false)
     }
     pub fn go_to_child(&mut self) -> bool {
-        let init_node_id = self.get_node_id();
-        if let Some((node_id, louds_pos)) = self.history_.last().unwrap()
-                                            .trie_.child_pos(init_node_id) {
+        if let Some((node_id, louds_pos)) =
+            self.history_.last()
+            .and_then(|s| { s.trie_.child_pos(s.node_id_) })
+        {
+//            debug!("(node_id: {:#?} louds_pos: {:#?})", node_id, louds_pos);
             self.push(node_id, louds_pos);
             true
-        } else {
+        }
+        else {
             false
         }
     }
@@ -156,7 +161,9 @@ impl<'a> Nav<'a> {
         self.history_.pop().is_some()
     }
     pub fn is_leaf(&self) -> bool {
-        panic!("not implemented")
+        self.history_.last().map(|s|
+            s.trie_.terminal_flags_.at(s.node_id_.0 as usize)
+        ).unwrap_or(false)
     }
     //pub fn get_string(&self) -> &str {
     //    panic!("not implemented")
@@ -169,7 +176,7 @@ impl<'a> Nav<'a> {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 enum DFT {
     ToChild,
     ToSibling,
@@ -182,12 +189,13 @@ impl DFT {
         DFT::ToChild
     }
     fn depth_first_traversal_step<'a>(&mut self, nav: &mut Nav<'a>) -> bool {
-        debug!("{:?}", *nav);
 
-        panic!();
         match *self {
             DFT::ToChild => {
                 if nav.go_to_child() {
+//                    debug!("{:#?}, {:#?}", *self, *nav);
+                    //if nav.history_.len() == 3 { panic!() }
+
                     return true;
                 } else {
                     *self = DFT::ToSibling;
@@ -226,7 +234,7 @@ impl DFT {
                 DFT::End => { return None; },
                 _ => (),
             }
-            if self.depth_first_traversal_step(nav) {
+            if self.depth_first_traversal_step(nav) && nav.is_leaf() {
                 return Some(nav.get_u8());
             }
         }
@@ -243,9 +251,16 @@ mod test {
     use super::{DFT, Nav};
     use super::super::LoudsTrie;
 
-    fn restore_with_nav_prop(v: Vec<String>, num_tries: NumTries)
+    fn nav_restore_prop(v: Vec<String>, num_tries: NumTries)
       -> qc::TestResult {
+        let mut vu: Vec<Vec<u8>> = Vec::new();
+        for s in v.iter() {
+            vu.push(From::from(s.as_bytes()));
+        }
+
+        debug!("in: {:?}", vu);
         if v.iter().any(|x| x.is_empty()) {
+            debug!("");
             return qc::TestResult::discard();
         }
         let mut keys: Vec<Key> = v.iter().map(|s| Key::new(s.as_bytes()))
@@ -263,24 +278,55 @@ mod test {
         while let Some(s) = dft.next_terminal(&mut nav) {
             vv2.push(From::from(s));
         }
+        debug!("vv1: {:?}", vv1);
+        debug!("vv2: {:?}", vv2);
 
         vv1.sort();
         vv2.sort();
-        qc::TestResult::from_bool(vv1.cmp(&vv2) == Ordering::Equal)
-        //qc::TestResult::passed()
+        let b = vv1.cmp(&vv2) == Ordering::Equal;
+        debug!("equal: {:?}", b);
+        debug!("");
+        qc::TestResult::from_bool(b)
+    }
+
+    fn nav_restore_prop_1(v: Vec<String>) -> qc::TestResult {
+        nav_restore_prop(v, NumTries::new(1))
     }
 
     #[test]
-    fn restore_with_nav_qc() {
+    fn nav_restore_qc() {
         let _ = env_logger::init();
-        qc::quickcheck(restore_with_nav_prop as fn(Vec<String>, NumTries)
+        qc::quickcheck(nav_restore_prop as fn(Vec<String>, NumTries)
                        -> qc::TestResult);
     }
 
     #[test]
-    fn restore_with_nav_manual() {
+    fn nav_restore_qc_1() {
         let _ = env_logger::init();
-        restore_with_nav_prop(vec!["Testing".to_owned()], NumTries::new(1));
+        qc::quickcheck(nav_restore_prop_1 as fn(Vec<String>)
+                       -> qc::TestResult);
+    }
+
+    fn assert_passed(tr: qc::TestResult) {
+        assert!(!tr.is_failure());
+    }
+
+    #[test]
+    fn nav_restore_manual() {
+        let _ = env_logger::init();
+        assert_passed(nav_restore_prop_1(vec!["\u{194}\u{128}".to_owned()]));
+        assert_passed(nav_restore_prop_1(vec!["Testing".to_owned()]));
+        assert_passed(nav_restore_prop_1(vec!["\u{80}".to_owned()]));
+        assert_passed(nav_restore_prop_1(vec!["\u{7f}".to_owned()]));
+        assert_passed(nav_restore_prop_1(vec!["~".to_owned()]));
+        assert_passed(nav_restore_prop_1(vec!["\u{0}".to_owned()]));
+        assert_passed(nav_restore_prop_1(vec!["Testing".to_owned(),
+                                              "Test".to_owned()]));
+        assert_passed(nav_restore_prop_1(vec!["Testing".to_owned(),
+                                              "trouble".to_owned(),
+                                              "Trouble".to_owned(),
+                                              "Threep".to_owned(),
+                                              "Test".to_owned()]));
     }
 }
 
