@@ -62,6 +62,7 @@ pub const INVALID_LINK_ID: LinkID = LinkID(std::u32::MAX);
 ///  |     |            |     |     
 ///  o     o            0     0
 ///
+///
 ///  Degree bit sequences, concatenated in level order:
 ///
 ///  10 1110 110 0 10 10 10 0 0 0
@@ -83,7 +84,9 @@ pub const INVALID_LINK_ID: LinkID = LinkID(std::u32::MAX);
 ///     Note that we first need to check whether the bit at
 ///     'first_child_m(node_id)' is set.
 /// next_sibling_node_id(node_id) == node_id + 1
-///     (but we need to check whether m + 1
+///     (but we need to check whether m + 1 is true)
+/// parent_node_id(node_id) == select1(node_id) - node_id - 1
+///     (if there is a parent)
 ///
 /// 'louds_pos' variables refer to bit indexes in 'louds_'
 ///
@@ -114,7 +117,7 @@ pub struct LoudsTrie {
     /// points into the next trie if there is one, or into the Tail.
     bases_: Vec<u8>,
 
-    /// Upper bits of the connected node_id
+    /// Upper bits of the connected node_id, indexed by link_id(?)
     extras_: FlatVec,
 
     /// Tail strings, accessed by NodeID returned from `get_linked_node_id`.
@@ -199,7 +202,12 @@ impl LoudsTrie {
         self.child_pos(node_id).is_some()
     }
     pub fn child_pos(&self, node_id: NodeID) -> Option<(NodeID, LoudsPos)> {
+        debug!("child_pos");
+        debug!("  pre-select0. node_id: {:?}", node_id);
+        debug!("  louds: {:?}", self.louds_);
+//            node_id = self.louds_.select1(node_id) - node_id - 1;
         let child_louds_pos = self.louds_.select0(node_id.0 as usize) + 1;
+        debug!("  pre-at. child_louds_pos: {:?}", child_louds_pos);
         if self.louds_.at(child_louds_pos) {
             let child_node_id = child_louds_pos - node_id.0 as usize - 1;
             assert!(child_node_id <= std::u32::MAX as usize);
@@ -534,6 +542,7 @@ impl LoudsTrie {
                 key_out.reverse();
                 return;
             }
+            // parent_node_id
             node_id = self.louds_.select1(node_id) - node_id - 1;
         }
     }

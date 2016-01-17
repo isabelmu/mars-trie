@@ -195,13 +195,15 @@ impl BitVec {
     }
 
     pub fn rank0(&self, i: usize) -> usize {
-        assert!(self.is_rank_enabled(), "MARISA_STATE_ERROR");
+        assert!(self.is_rank_enabled(),
+                "rank0 was called, but ranks are not enabled");
         assert!(i <= self.size_, "MARISA_BOUND_ERROR");
         return i - self.rank1(i);
     }
 
     pub fn rank1(&self, i: usize) -> usize {
-        assert!(self.is_rank_enabled(), "MARISA_STATE_ERROR");
+        assert!(self.is_rank_enabled(),
+                "rank1 was called, but ranks are not enabled");
         assert!(i <= self.size_, "MARISA_BOUND_ERROR");
 
         // FIXME: looks like Index is returning a value instead of an address..
@@ -243,7 +245,8 @@ impl BitVec {
 
     #[cfg(target_pointer_width = "64")]
     pub fn select0(&self, mut i: usize) -> usize {
-        assert!(self.is_select0_enabled(), "MARISA_STATE_ERROR");
+        assert!(self.is_select0_enabled(),
+                "select0 was called, but select0 is not enabled");
         assert!(i < self.num_0s(), "MARISA_BOUND_ERROR");
 
         let select_id: usize = i / 512;
@@ -308,7 +311,8 @@ impl BitVec {
 
     #[cfg(target_pointer_width = "32")]
     pub fn select0(&self, mut i: usize) -> usize {
-        assert!(self.is_select0_enabled(), "MARISA_STATE_ERROR");
+        assert!(self.is_select0_enabled(),
+                "select0 was called, but select0 is not enabled");
         assert!(i < self.num_0s(), "MARISA_BOUND_ERROR");
     
         let select_id: usize = i / 512;
@@ -401,7 +405,8 @@ impl BitVec {
 
     #[cfg(target_pointer_width = "64")]
     pub fn select1(&self, mut i: usize) -> usize {
-        assert!(self.is_select1_enabled(), "MARISA_STATE_ERROR");
+        assert!(self.is_select1_enabled(),
+                "select1 was called, but select1 is not enabled");
         assert!(i < self.num_1s(), "MARISA_BOUND_ERROR");
 
         let select_id: usize = i / 512;
@@ -465,7 +470,8 @@ impl BitVec {
 
     #[cfg(target_pointer_width = "32")]
     pub fn select1(&self, mut i: usize) -> usize {
-        assert!(self.is_select1_enabled(), "MARISA_STATE_ERROR");
+        assert!(self.is_select1_enabled(),
+                "select1 was called, but select1 is not enabled");
         assert!(i < num_1s(), "MARISA_BOUND_ERROR");
     
         let select_id: usize = i / 512;

@@ -33,6 +33,7 @@ impl<'a> State<'a> {
 
 #[derive(Debug)]
 pub struct Nav<'a> {
+    trie_: &'a LoudsTrie,
     history_: Vec<State<'a> >,
     key_buf_: Vec<u8>,
 }
@@ -43,7 +44,8 @@ pub struct Nav<'a> {
 
 impl<'a> Nav<'a> {
     fn new(trie: &'a LoudsTrie) -> Nav<'a> {
-        let mut out = Nav { history_: Vec::new(), key_buf_: Vec::new() };
+        let mut out = Nav { trie_: trie, history_: Vec::new(),
+                            key_buf_: Vec::new() };
         out.history_.push(State::new(trie, NodeID(0), LoudsPos(0),
                           INVALID_LINK_ID, 0));
         out
@@ -56,7 +58,7 @@ impl<'a> Nav<'a> {
     fn push_str<'b>(&mut self, key: &'b[u8], trie: &'a LoudsTrie, node_id: NodeID,
                     louds_pos: LoudsPos, link_id: LinkID) {
 
-        //debug!("push_str(key: {:?})", key);
+        debug!("push_str(key: {:?})", key);
 
 //        debug!("push_str(key: {:#?}, node_id: {:#?}, louds_pos: {:#?}, \
 //                link_id: {:#?}", key, node_id, louds_pos, link_id);
@@ -69,21 +71,24 @@ impl<'a> Nav<'a> {
     }
 
     fn push(&mut self, mut node_id: NodeID, louds_pos: LoudsPos) {
-//        debug!("push");
+        debug!("push (node_id: {:?}, louds_pos: {:?})", node_id, louds_pos);
         let mut trie = self.history_.last().unwrap().trie_;
         loop {
             if trie.link_flags_.at(node_id.0 as usize) {
-                //debug!("Link flags TRUE");
                 let (linked_node_id, link_id) = trie.get_linked_ids(node_id.0
                                                                     as usize);
+                debug!("linked_node_id: {:?}, link_id: {:?}",
+                       linked_node_id, link_id);
                 // Proceed either to next trie or tail
                 match &trie.next_trie_ {
                     &Some(ref next_trie) => {
+                        debug!("Link TRUE--next trie");
                         trie = &**next_trie;
                         node_id = linked_node_id; // not sure about this
                         continue;
                     },
                     &None => {
+                        debug!("Link TRUE--tail");
                         // FIXME: Shouldn't need this temporary vector.
                         //        'restore' should return an iterator, and
                         //        state.push should consume it.
@@ -104,23 +109,25 @@ impl<'a> Nav<'a> {
             }
             break;
         }
+        debug!("done with push");
     }
     pub fn has_child(&self) -> bool {
         self.history_.last().map(|s| s.trie_.has_child(s.node_id_))
             .unwrap_or(false)
     }
     pub fn go_to_child(&mut self) -> bool {
-        //debug!("go_to_child");
+        debug!("go_to_child");
         if let Some((node_id, louds_pos)) =
             self.history_.last()
             .and_then(|s| { s.trie_.child_pos(s.node_id_) })
         {
-            //debug!("  (node_id: {:?} louds_pos: {:?})", node_id.0, louds_pos.0);
+            debug!("  (node_id: {:?} louds_pos: {:?})", node_id.0, louds_pos.0);
             self.push(node_id, louds_pos);
+            debug!("  true");
             true
         }
         else {
-            //debug!("  no child");
+            debug!("  no child");
             false
         }
     }
@@ -144,28 +151,21 @@ impl<'a> Nav<'a> {
         }).unwrap_or(false)
     }
     pub fn go_to_sibling(&mut self) -> bool {
-        //debug!("go_to_sibling");
-        //if self.history_.len() < 2 {
-        //    return false;
-        //}
+        debug!("go_to_sibling");
         if let Some(&s) = self.history_.last() {
-            //debug!("louds_pos: {:?}", s.louds_pos_.0);
-            //debug!("louds_pos + 1: {:?}", s.louds_pos_.0 + 1);
-
             let cur_len = self.key_buf_.len();
-            //debug!("s.key_pos_: {:?}, cur_len: {:?}", s.key_pos_, cur_len);
             assert!((s.key_pos_ as usize) <= cur_len);
             self.key_buf_.truncate(s.key_pos_ as usize);
             if s.trie_.louds_.at(s.louds_pos_.0 as usize + 1) {
-                //debug!("  (node_id: {:?} louds_pos: {:?})",
-                //       s.node_id_.0 + 1, s.louds_pos_.0 + 1);
+                debug!("  (node_id: {:?} louds_pos: {:?})",
+                       s.node_id_.0 + 1, s.louds_pos_.0 + 1);
                 self.history_.pop();
                 // FIXME: What about LinkID?
                 self.push(NodeID(s.node_id_.0 + 1),
                           LoudsPos(s.louds_pos_.0 + 1));
                 true
             } else {
-                //debug!("  no sibling");
+                debug!("  no sibling");
                 false
             }
         } else {
@@ -176,16 +176,10 @@ impl<'a> Nav<'a> {
         panic!("not implemented")
     }
     pub fn go_to_parent(&mut self) -> bool {
-        //debug!("go_to_parent");
+        debug!("go_to_parent");
         // Could use LOUDS-trie select1(rank0(m)) to navigate upward (within a
         // single trie), but it's probably more efficient just to keep a stack
         // and pop to go up
-
-        //if self.history_.len() == 1 {
-        //    self.history_.pop();
-        //    return false;
-        //}
-        
         if let Some(s) = self.history_.pop() {
             let cur_len = self.key_buf_.len();
             assert!((s.key_pos_ as usize) <= cur_len);
@@ -193,7 +187,7 @@ impl<'a> Nav<'a> {
             if let Some(s) = self.history_.last() {
                 let node_id = s.node_id_;
                 let louds_pos = s.louds_pos_;
-                //debug!("  (node_id: {:?} louds_pos: {:?})", node_id, louds_pos);
+                debug!("  (node_id: {:?} louds_pos: {:?})", node_id, louds_pos);
             }
             true
         } else {
@@ -201,10 +195,10 @@ impl<'a> Nav<'a> {
         }
     }
     pub fn is_leaf(&self) -> bool {
-        //debug!("is_leaf");
-        self.history_.last().map(|s|
-            s.trie_.terminal_flags_.at(s.node_id_.0 as usize)
-        ).unwrap_or(false)
+        self.history_.last().map(|s| {
+            // Use root trie
+            self.trie_.terminal_flags_.at(s.node_id_.0 as usize)
+        }).unwrap_or(false)
     }
     //pub fn get_string(&self) -> &str {
     //    panic!("not implemented")
@@ -230,13 +224,9 @@ impl DFT {
         DFT::ToChild
     }
     fn depth_first_traversal_step<'a>(&mut self, nav: &mut Nav<'a>) -> bool {
-
         match *self {
             DFT::ToChild => {
                 if nav.go_to_child() {
-//                    debug!("{:#?}, {:#?}", *self, *nav);
-                    //if nav.history_.len() == 3 { panic!() }
-
                     return true;
                 } else {
                     *self = DFT::ToSibling;
@@ -292,14 +282,27 @@ mod test {
     use super::{DFT, Nav};
     use super::super::LoudsTrie;
 
+    fn debug_print_louds_bv(mut trie: &LoudsTrie) {
+        let mut x = 0;
+        loop {
+            debug!("{}, {:#?}", x, trie.louds_);
+            if let &Some(ref next_trie) = &trie.next_trie_ {
+                trie = &**next_trie;
+            } else {
+                break;
+            }
+            x += 1;
+        }
+    }
+
     fn navr_prop(v: Vec<String>, num_tries: NumTries)
       -> qc::TestResult {
-        //debug!("in: {:?}", v);
-        //let mut vu: Vec<Vec<u8>> = Vec::new();
-        //for s in v.iter() {
-        //    vu.push(From::from(s.as_bytes()));
-        //}
-        //debug!("u8: {:?}", vu);
+        debug!("in: {:?}", v);
+        let mut vu: Vec<Vec<u8>> = Vec::new();
+        for s in v.iter() {
+            vu.push(From::from(s.as_bytes()));
+        }
+        debug!("u8: {:?}", vu);
 
         if v.iter().any(|x| x.is_empty()) {
             //debug!("");
@@ -310,6 +313,7 @@ mod test {
         let config = Config::new().with_num_tries(num_tries);
         let trie = LoudsTrie::build(&mut keys, &config);
         //debug!("trie: {:#?}", trie);
+        debug_print_louds_bv(&trie);
 
         let mut nav = Nav::new(&trie);
         let mut dft = DFT::new();
@@ -372,37 +376,38 @@ mod test {
     #[test]
     fn navr_manual() {
         let _ = env_logger::init();
-        assert_p(navr_prop_str_1(vec!["a"]));
-        assert_p(navr_prop_str_1(vec!["ab"]));
-        assert_p(navr_prop_str_1(vec!["\u{194}\u{128}"]));
-        assert_p(navr_prop_str_1(vec!["Testing"]));
-        assert_p(navr_prop_str_1(vec!["\u{80}"]));
-        assert_p(navr_prop_str_1(vec!["\u{7f}"]));
-        assert_p(navr_prop_str_1(vec!["~"]));
-        assert_p(navr_prop_str_1(vec!["\u{0}"]));
-        assert_p(navr_prop_str_1(vec!["Testing", "T"]));
-        assert_p(navr_prop_str_1(vec!["Testing", "Test"]));
-        assert_p(navr_prop_str_1(vec!["trouble", "Threep"]));
-        assert_p(navr_prop_str_1(vec!["Threep", "Test"]));
-        assert_p(navr_prop_str_1(vec!["trouble", "Threep", "Test"]));
-        assert_p(navr_prop_str_1(
-            vec!["Testing", "trouble", "Trouble", "Threep", "Test"]));
+        //assert_p(navr_prop_str_1(vec!["a"]));
+        //assert_p(navr_prop_str_1(vec!["ab"]));
+        //assert_p(navr_prop_str_1(vec!["ab"]));
+        //assert_p(navr_prop_str_1(vec!["\u{194}\u{128}"]));
+        //assert_p(navr_prop_str_1(vec!["Testing"]));
+        //assert_p(navr_prop_str_1(vec!["\u{80}"]));
+        //assert_p(navr_prop_str_1(vec!["\u{7f}"]));
+        //assert_p(navr_prop_str_1(vec!["~"]));
+        //assert_p(navr_prop_str_1(vec!["\u{0}"]));
+        //assert_p(navr_prop_str_1(vec!["Testing", "T"]));
+        //assert_p(navr_prop_str_1(vec!["Testing", "Test"]));
+        //assert_p(navr_prop_str_1(vec!["trouble", "Threep"]));
+        //assert_p(navr_prop_str_1(vec!["Threep", "Test"]));
+        //assert_p(navr_prop_str_1(vec!["trouble", "Threep", "Test"]));
+        //assert_p(navr_prop_str_1(
+        //    vec!["Testing", "trouble", "Trouble", "Threep", "Test"]));
 
-        assert_p(navr_prop_str_2(vec!["a"]));
+        //assert_p(navr_prop_str_2(vec!["a"]));
         assert_p(navr_prop_str_2(vec!["ab"]));
-        assert_p(navr_prop_str_2(vec!["\u{194}\u{128}"]));
-        assert_p(navr_prop_str_2(vec!["Testing"]));
-        assert_p(navr_prop_str_2(vec!["\u{80}"]));
-        assert_p(navr_prop_str_2(vec!["\u{7f}"]));
-        assert_p(navr_prop_str_2(vec!["~"]));
-        assert_p(navr_prop_str_2(vec!["\u{0}"]));
-        assert_p(navr_prop_str_2(vec!["Testing", "T"]));
-        assert_p(navr_prop_str_2(vec!["Testing", "Test"]));
-        assert_p(navr_prop_str_2(vec!["trouble", "Threep"]));
-        assert_p(navr_prop_str_2(vec!["Threep", "Test"]));
-        assert_p(navr_prop_str_2(vec!["trouble", "Threep", "Test"]));
-        assert_p(navr_prop_str_2(
-            vec!["Testing", "trouble", "Trouble", "Threep", "Test"]));
+        //assert_p(navr_prop_str_2(vec!["\u{194}\u{128}"]));
+        //assert_p(navr_prop_str_2(vec!["Testing"]));
+        //assert_p(navr_prop_str_2(vec!["\u{80}"]));
+        //assert_p(navr_prop_str_2(vec!["\u{7f}"]));
+        //assert_p(navr_prop_str_2(vec!["~"]));
+        //assert_p(navr_prop_str_2(vec!["\u{0}"]));
+        //assert_p(navr_prop_str_2(vec!["Testing", "T"]));
+        //assert_p(navr_prop_str_2(vec!["Testing", "Test"]));
+        //assert_p(navr_prop_str_2(vec!["trouble", "Threep"]));
+        //assert_p(navr_prop_str_2(vec!["Threep", "Test"]));
+        //assert_p(navr_prop_str_2(vec!["trouble", "Threep", "Test"]));
+        //assert_p(navr_prop_str_2(
+        //    vec!["Testing", "trouble", "Trouble", "Threep", "Test"]));
     }
 }
 
