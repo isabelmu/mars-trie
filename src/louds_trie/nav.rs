@@ -2,6 +2,7 @@ use std;
 use base::*;
 use super::{LoudsTrie, NodeID, LoudsPos, LinkID, INVALID_LINK_ID};
 
+#[derive(Copy, Clone)]
 struct State<'a> {
     trie_: &'a LoudsTrie,
     node_id_: NodeID,
@@ -115,11 +116,12 @@ impl<'a> Nav<'a> {
             self.history_.last()
             .and_then(|s| { s.trie_.child_pos(s.node_id_) })
         {
-//            debug!("(node_id: {:#?} louds_pos: {:#?})", node_id, louds_pos);
+            debug!("  (node_id: {:?} louds_pos: {:?})", node_id.0, louds_pos.0);
             self.push(node_id, louds_pos);
             true
         }
         else {
+            debug!("  no child");
             false
         }
     }
@@ -147,17 +149,24 @@ impl<'a> Nav<'a> {
         //if self.history_.len() < 2 {
         //    return false;
         //}
-        if let Some(s) = self.history_.pop() {
+        if let Some(&s) = self.history_.last() {
+            //debug!("louds_pos: {:?}", s.louds_pos_.0);
+            //debug!("louds_pos + 1: {:?}", s.louds_pos_.0 + 1);
+
             let cur_len = self.key_buf_.len();
             debug!("s.key_pos_: {:?}, cur_len: {:?}", s.key_pos_, cur_len);
             assert!((s.key_pos_ as usize) <= cur_len);
             self.key_buf_.truncate(s.key_pos_ as usize);
             if s.trie_.louds_.at(s.louds_pos_.0 as usize + 1) {
+                debug!("  (node_id: {:?} louds_pos: {:?})",
+                       s.node_id_.0 + 1, s.louds_pos_.0 + 1);
+                self.history_.pop();
                 // FIXME: What about LinkID?
                 self.push(NodeID(s.node_id_.0 + 1),
                           LoudsPos(s.louds_pos_.0 + 1));
                 true
             } else {
+                debug!("  no sibling");
                 false
             }
         } else {
@@ -182,6 +191,11 @@ impl<'a> Nav<'a> {
             let cur_len = self.key_buf_.len();
             assert!((s.key_pos_ as usize) <= cur_len);
             self.key_buf_.truncate(s.key_pos_ as usize);
+            if let Some(s) = self.history_.last() {
+                let node_id = s.node_id_;
+                let louds_pos = s.louds_pos_;
+                debug!("  (node_id: {:?} louds_pos: {:?})", node_id, louds_pos);
+            }
             true
         } else {
             false
@@ -296,6 +310,7 @@ mod test {
                                  .collect();
         let config = Config::new().with_num_tries(num_tries);
         let trie = LoudsTrie::build(&mut keys, &config);
+        //debug!("trie: {:#?}", trie);
 
         let mut nav = Nav::new(&trie);
         let mut dft = DFT::new();
@@ -356,9 +371,10 @@ mod test {
         //                                      "T".to_owned()]));
         //assert_passed(nav_restore_prop_1(vec!["Testing".to_owned(),
         //                                      "Test".to_owned()]));
-        assert_passed(nav_restore_prop_1(vec![
-                                              "Threep".to_owned(),
-                                              "Test".to_owned()]));
+        //assert_passed(nav_restore_prop_1(vec!["trouble".to_owned(),
+        //                                      "Threep".to_owned()]));
+        //assert_passed(nav_restore_prop_1(vec!["Threep".to_owned(),
+        //                                      "Test".to_owned()]));
         assert_passed(nav_restore_prop_1(vec!["trouble".to_owned(),
                                               "Threep".to_owned(),
                                               "Test".to_owned()]));
