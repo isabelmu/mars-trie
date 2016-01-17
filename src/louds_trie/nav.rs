@@ -56,7 +56,7 @@ impl<'a> Nav<'a> {
     fn push_str<'b>(&mut self, key: &'b[u8], trie: &'a LoudsTrie, node_id: NodeID,
                     louds_pos: LoudsPos, link_id: LinkID) {
 
-        debug!("push_str(key: {:?})", key);
+        //debug!("push_str(key: {:?})", key);
 
 //        debug!("push_str(key: {:#?}, node_id: {:#?}, louds_pos: {:#?}, \
 //                link_id: {:#?}", key, node_id, louds_pos, link_id);
@@ -73,7 +73,7 @@ impl<'a> Nav<'a> {
         let mut trie = self.history_.last().unwrap().trie_;
         loop {
             if trie.link_flags_.at(node_id.0 as usize) {
-                debug!("Link flags TRUE");
+                //debug!("Link flags TRUE");
                 let (linked_node_id, link_id) = trie.get_linked_ids(node_id.0
                                                                     as usize);
                 // Proceed either to next trie or tail
@@ -98,7 +98,7 @@ impl<'a> Nav<'a> {
                     }
                 }
             } else {
-                debug!("Link flags FALSE");
+                //debug!("Link flags FALSE");
                 let node_char = [ trie.bases_[node_id.0 as usize] ];
                 self.push_str(&node_char, trie, node_id, louds_pos,
                               INVALID_LINK_ID);
@@ -111,17 +111,17 @@ impl<'a> Nav<'a> {
             .unwrap_or(false)
     }
     pub fn go_to_child(&mut self) -> bool {
-        debug!("go_to_child");
+        //debug!("go_to_child");
         if let Some((node_id, louds_pos)) =
             self.history_.last()
             .and_then(|s| { s.trie_.child_pos(s.node_id_) })
         {
-            debug!("  (node_id: {:?} louds_pos: {:?})", node_id.0, louds_pos.0);
+            //debug!("  (node_id: {:?} louds_pos: {:?})", node_id.0, louds_pos.0);
             self.push(node_id, louds_pos);
             true
         }
         else {
-            debug!("  no child");
+            //debug!("  no child");
             false
         }
     }
@@ -145,7 +145,7 @@ impl<'a> Nav<'a> {
         }).unwrap_or(false)
     }
     pub fn go_to_sibling(&mut self) -> bool {
-        debug!("go_to_sibling");
+        //debug!("go_to_sibling");
         //if self.history_.len() < 2 {
         //    return false;
         //}
@@ -154,19 +154,19 @@ impl<'a> Nav<'a> {
             //debug!("louds_pos + 1: {:?}", s.louds_pos_.0 + 1);
 
             let cur_len = self.key_buf_.len();
-            debug!("s.key_pos_: {:?}, cur_len: {:?}", s.key_pos_, cur_len);
+            //debug!("s.key_pos_: {:?}, cur_len: {:?}", s.key_pos_, cur_len);
             assert!((s.key_pos_ as usize) <= cur_len);
             self.key_buf_.truncate(s.key_pos_ as usize);
             if s.trie_.louds_.at(s.louds_pos_.0 as usize + 1) {
-                debug!("  (node_id: {:?} louds_pos: {:?})",
-                       s.node_id_.0 + 1, s.louds_pos_.0 + 1);
+                //debug!("  (node_id: {:?} louds_pos: {:?})",
+                //       s.node_id_.0 + 1, s.louds_pos_.0 + 1);
                 self.history_.pop();
                 // FIXME: What about LinkID?
                 self.push(NodeID(s.node_id_.0 + 1),
                           LoudsPos(s.louds_pos_.0 + 1));
                 true
             } else {
-                debug!("  no sibling");
+                //debug!("  no sibling");
                 false
             }
         } else {
@@ -177,7 +177,7 @@ impl<'a> Nav<'a> {
         panic!("not implemented")
     }
     pub fn go_to_parent(&mut self) -> bool {
-        debug!("go_to_parent");
+        //debug!("go_to_parent");
         // Could use LOUDS-trie select1(rank0(m)) to navigate upward (within a
         // single trie), but it's probably more efficient just to keep a stack
         // and pop to go up
@@ -194,7 +194,7 @@ impl<'a> Nav<'a> {
             if let Some(s) = self.history_.last() {
                 let node_id = s.node_id_;
                 let louds_pos = s.louds_pos_;
-                debug!("  (node_id: {:?} louds_pos: {:?})", node_id, louds_pos);
+                //debug!("  (node_id: {:?} louds_pos: {:?})", node_id, louds_pos);
             }
             true
         } else {
@@ -295,15 +295,15 @@ mod test {
 
     fn nav_restore_prop(v: Vec<String>, num_tries: NumTries)
       -> qc::TestResult {
-        debug!("in: {:?}", v);
-        let mut vu: Vec<Vec<u8>> = Vec::new();
-        for s in v.iter() {
-            vu.push(From::from(s.as_bytes()));
-        }
-        debug!("u8: {:?}", vu);
+        //debug!("in: {:?}", v);
+        //let mut vu: Vec<Vec<u8>> = Vec::new();
+        //for s in v.iter() {
+        //    vu.push(From::from(s.as_bytes()));
+        //}
+        //debug!("u8: {:?}", vu);
 
         if v.iter().any(|x| x.is_empty()) {
-            debug!("");
+            //debug!("");
             return qc::TestResult::discard();
         }
         let mut keys: Vec<Key> = v.iter().map(|s| Key::new(s.as_bytes()))
@@ -325,12 +325,12 @@ mod test {
 
         vv1.sort();
         vv2.sort();
-        debug!("vv1: {:?}", vv1);
-        debug!("vv2: {:?}", vv2);
+        //debug!("vv1: {:?}", vv1);
+        //debug!("vv2: {:?}", vv2);
 
         let b = vv1.cmp(&vv2) == Ordering::Equal;
-        debug!("equal: {:?}", b);
-        debug!("");
+        //debug!("equal: {:?}", b);
+        //debug!("");
         qc::TestResult::from_bool(b)
     }
 
