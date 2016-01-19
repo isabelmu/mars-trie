@@ -394,14 +394,14 @@ mod test {
         //    vec!["Testing", "trouble", "Trouble", "Threep", "Test"]));
 
         //assert_p(navr_prop_str_2(vec!["a"]));
-        assert_p(navr_prop_str_2(vec!["ab"]));
+        //assert_p(navr_prop_str_2(vec!["ab"]));
         //assert_p(navr_prop_str_2(vec!["\u{194}\u{128}"]));
         //assert_p(navr_prop_str_2(vec!["Testing"]));
         //assert_p(navr_prop_str_2(vec!["\u{80}"]));
         //assert_p(navr_prop_str_2(vec!["\u{7f}"]));
         //assert_p(navr_prop_str_2(vec!["~"]));
         //assert_p(navr_prop_str_2(vec!["\u{0}"]));
-        //assert_p(navr_prop_str_2(vec!["Testing", "T"]));
+        assert_p(navr_prop_str_2(vec!["Testing", "T"]));
         //assert_p(navr_prop_str_2(vec!["Testing", "Test"]));
         //assert_p(navr_prop_str_2(vec!["trouble", "Threep"]));
         //assert_p(navr_prop_str_2(vec!["Threep", "Test"]));
