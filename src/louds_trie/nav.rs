@@ -119,7 +119,7 @@ impl<'a> Nav<'a> {
         debug!("go_to_child");
         if let Some((node_id, louds_pos)) =
             self.history_.last()
-            .and_then(|s| { s.trie_.child_pos(s.node_id_) })
+            .and_then(|s| { self.trie_.child_pos(s.node_id_) })
         {
             debug!("  (node_id: {:?} louds_pos: {:?})", node_id.0, louds_pos.0);
             self.push(node_id, louds_pos);
