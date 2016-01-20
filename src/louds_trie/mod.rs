@@ -202,6 +202,10 @@ impl LoudsTrie {
         self.child_pos(node_id).is_some()
     }
     pub fn child_pos(&self, node_id: NodeID) -> Option<(NodeID, LoudsPos)> {
+        // This can be caused by calling child_pos on a non-root trie.
+        assert!(self.louds_.is_select0_enabled(),
+                "select0 must be enabled in child_pos.");
+
         debug!("child_pos");
         debug!("  pre-select0. node_id: {:?}", node_id);
         debug!("  louds: {:?}", self.louds_);
