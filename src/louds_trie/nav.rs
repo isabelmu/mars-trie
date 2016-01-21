@@ -60,9 +60,6 @@ impl<'a> Nav<'a> {
 
         debug!("push_str(key: {:?})", key);
 
-//        debug!("push_str(key: {:#?}, node_id: {:#?}, louds_pos: {:#?}, \
-//                link_id: {:#?}", key, node_id, louds_pos, link_id);
-
         let old_len = self.key_buf_.len();
         self.key_buf_.extend(key);
         assert!(old_len <= std::u32::MAX as usize);
