@@ -71,9 +71,11 @@ impl<'a> Nav<'a> {
         debug!("push (node_id: {:?}, louds_pos: {:?})", node_id, louds_pos);
         let mut trie = self.history_.last().unwrap().trie_;
         loop {
-            if trie.link_flags_.at(node_id.0 as usize) {
-                let (linked_node_id, link_id) = trie.get_linked_ids(node_id.0
-                                                                    as usize);
+            debug!("push loop");
+            if self.trie_.link_flags_.at(node_id.0 as usize) {
+                debug!("Link flags TRUE");
+                let (linked_node_id, link_id) =
+                    self.trie_.get_linked_ids(node_id.0 as usize);
                 debug!("linked_node_id: {:?}, link_id: {:?}",
                        linked_node_id, link_id);
                 // Proceed either to next trie or tail
@@ -99,7 +101,7 @@ impl<'a> Nav<'a> {
                     }
                 }
             } else {
-                //debug!("Link flags FALSE");
+                debug!("Link flags FALSE");
                 let node_char = [ trie.bases_[node_id.0 as usize] ];
                 self.push_str(&node_char, trie, node_id, louds_pos,
                               INVALID_LINK_ID);
@@ -186,8 +188,10 @@ impl<'a> Nav<'a> {
                 let louds_pos = s.louds_pos_;
                 debug!("  (node_id: {:?} louds_pos: {:?})", node_id, louds_pos);
             }
+            debug!("  -> true");
             true
         } else {
+            debug!("  -> false");
             false
         }
     }
@@ -325,8 +329,8 @@ mod test {
 
         vv1.sort();
         vv2.sort();
-        //debug!("vv1: {:?}", vv1);
-        //debug!("vv2: {:?}", vv2);
+        debug!("vv1: {:?}", vv1);
+        debug!("vv2: {:?}", vv2);
 
         let b = vv1.cmp(&vv2) == Ordering::Equal;
         //debug!("equal: {:?}", b);
