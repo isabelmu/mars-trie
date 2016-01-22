@@ -649,7 +649,6 @@ impl LoudsTrie {
         (NodeID(node_id as u32), LinkID(link_id as u32))
     }
 
-    /// ...?
     fn update_link_id(&self, link_id: usize, node_id: usize) -> usize {
         if link_id == INVALID_LINK_ID.0 as usize {
             self.get_link_id(node_id)

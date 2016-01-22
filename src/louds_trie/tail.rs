@@ -104,8 +104,6 @@ impl Tail {
         }
     }
 
-
-
 /*
     void map(Mapper &mapper);
     void read(Reader &reader);
