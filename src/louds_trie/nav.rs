@@ -286,7 +286,8 @@ mod test {
     fn debug_print_louds_bv(mut trie: &LoudsTrie) {
         let mut x = 0;
         loop {
-            debug!("{}, {:#?}", x, trie.louds_);
+            debug!("Louds #{}, {:#?}", x, trie.louds_);
+            debug!("Terminals #{}, {:#?}", x, trie.terminal_flags_);
             if let &Some(ref next_trie) = &trie.next_trie_ {
                 trie = &**next_trie;
             } else {
@@ -296,8 +297,7 @@ mod test {
         }
     }
 
-    fn navr_prop(v: Vec<String>, num_tries: NumTries)
-      -> qc::TestResult {
+    fn navr_prop(v: Vec<String>, num_tries: NumTries) -> qc::TestResult {
         debug!("in: {:?}", v);
         let mut vu: Vec<Vec<u8>> = Vec::new();
         for s in v.iter() {
